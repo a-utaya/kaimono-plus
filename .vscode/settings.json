@@ -2,5 +2,13 @@
   "cSpell.words": [
     "kaimono"
   ],
-  "dart.flutterSdkPath": ".fvm/versions/3.22.2"
+  "dart.flutterSdkPath": ".fvm/versions/3.22.2",
+  "editor.formatOnSave": true,
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "Dart-Code.dart-code"
+  },
+  "dart.lineLength": 80,
+  "dart.previewFlutterUiGuides": true,
+  "dart.previewFlutterUiGuidesCustomTracking": true
 }
