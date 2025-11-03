@@ -4,9 +4,17 @@
   ],
   "dart.flutterSdkPath": ".fvm/versions/3.22.2",
   "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
   "[dart]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "Dart-Code.dart-code"
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
   },
   "dart.lineLength": 80,
   "dart.previewFlutterUiGuides": true,
