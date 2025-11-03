@@ -1,5 +1,6 @@
 {
-    "cSpell.words": [
-        "kaimono"
-    ]
+  "cSpell.words": [
+    "kaimono"
+  ],
+  "dart.flutterSdkPath": ".fvm/versions/3.22.2"
 }
