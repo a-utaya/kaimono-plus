@@ -119,7 +119,7 @@ class SignUpPage extends StatelessWidget {
                     const Text('既にアカウントをお持ちですか？ '),
                     TextButton(
                       onPressed: () {
-                        // TODO: ログインページに遷移
+                        Navigator.of(context).pop();
                       },
                       child: const Text('ログイン'),
                     ),

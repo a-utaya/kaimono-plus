@@ -16,7 +16,8 @@ class SignInPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: Container(
-        color: Colors.grey[100],
+        height: double.infinity,
+        color: Colors.grey[50],
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),

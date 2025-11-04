@@ -79,14 +79,23 @@ class ListPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                             child: Padding(
                               padding: const EdgeInsets.all(4.0),
-                              child: Icon(
-                                item.isCompleted
-                                    ? Icons.check_box
-                                    : Icons.check_box_outline_blank,
-                                color: item.isCompleted
-                                    ? Colors.amber
-                                    : Colors.grey[600],
-                              ),
+                              child: item.isCompleted
+                                  ? const Icon(
+                                      Icons.check_box,
+                                      color: Colors.amber,
+                                      size: 24,
+                                    )
+                                  : Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey[600]!,
+                                          width: 1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -125,9 +134,14 @@ class ListPage extends StatelessWidget {
                                 : Text(
                                     item.text,
                                     style: TextStyle(
-                                      color: Colors.grey[700],
+                                      color: item.isCompleted
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
                                       fontSize: 16,
                                       height: 1.5,
+                                      decoration: item.isCompleted
+                                          ? TextDecoration.lineThrough
+                                          : null,
                                     ),
                                   ),
                           ),
