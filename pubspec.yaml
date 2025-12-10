@@ -1,0 +1,10 @@
+name: kaimono_plus_workspace
+publish_to: none
+environment:
+  sdk: '^3.10.3'
+
+workspace:
+  - packages/apps/kaimono_plus
+  - packages/core/auth
+dev_dependencies:
+  melos: ^7.3.0
