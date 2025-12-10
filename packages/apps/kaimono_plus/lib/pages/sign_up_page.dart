@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 
 class SignUpPage extends StatelessWidget {
   const SignUpPage({super.key});
@@ -15,56 +16,49 @@ class SignUpPage extends StatelessWidget {
         color: Colors.grey[100],
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const .all(24.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: .stretch,
               children: [
-                const SizedBox(height: 32),
+                const Gap(32),
                 const Text(
                   'アカウントを作成',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 28, fontWeight: .bold),
+                  textAlign: .center,
                 ),
-                const SizedBox(height: 48),
+                const Gap(48),
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'メールアドレス',
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    border: OutlineInputBorder(borderRadius: .circular(8)),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
+                      borderRadius: .circular(8),
+                      borderSide: .new(color: Colors.grey[300]!),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.amber),
+                      borderRadius: .circular(8),
+                      borderSide: const .new(color: Colors.amber),
                     ),
                   ),
-                  keyboardType: TextInputType.emailAddress,
+                  keyboardType: .emailAddress,
                   autofillHints: const [AutofillHints.email],
                 ),
-                const SizedBox(height: 16),
+                const Gap(16),
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'パスワード',
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    border: OutlineInputBorder(borderRadius: .circular(8)),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
+                      borderRadius: .circular(8),
+                      borderSide: .new(color: Colors.grey[300]!),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.amber),
+                      borderRadius: .circular(8),
+                      borderSide: const .new(color: Colors.amber),
                     ),
                   ),
                   obscureText: true,
@@ -106,10 +100,7 @@ class SignUpPage extends StatelessWidget {
                   ),
                   child: const Text(
                     'アカウントを作成',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(height: 24),
