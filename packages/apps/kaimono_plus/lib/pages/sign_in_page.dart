@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 
 import 'list_page.dart';
 import 'password_reset_page.dart';
@@ -20,18 +21,15 @@ class SignInPage extends StatelessWidget {
         color: Colors.grey[50],
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const .all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 32),
                 const Text(
                   'ログイン',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 28, fontWeight: .bold),
+                  textAlign: .center,
                 ),
                 const SizedBox(height: 48),
                 TextField(
@@ -39,19 +37,17 @@ class SignInPage extends StatelessWidget {
                     labelText: 'メールアドレス',
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    border: OutlineInputBorder(borderRadius: .circular(8)),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
+                      borderRadius: .circular(8),
+                      borderSide: .new(color: Colors.grey[300]!),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.amber),
+                      borderRadius: .circular(8),
+                      borderSide: const .new(color: Colors.amber),
                     ),
                   ),
-                  keyboardType: TextInputType.emailAddress,
+                  keyboardType: .emailAddress,
                   autofillHints: const [AutofillHints.email],
                 ),
                 const SizedBox(height: 16),
@@ -60,50 +56,41 @@ class SignInPage extends StatelessWidget {
                     labelText: 'パスワード',
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    border: OutlineInputBorder(borderRadius: .circular(8)),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
+                      borderRadius: .circular(8),
+                      borderSide: .new(color: Colors.grey[300]!),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.amber),
+                      borderRadius: .circular(8),
+                      borderSide: const .new(color: Colors.amber),
                     ),
                   ),
                   obscureText: true,
                   autofillHints: const [AutofillHints.password],
                 ),
-                const SizedBox(height: 32),
+                const Gap(32),
                 ElevatedButton(
                   onPressed: () {
                     // FIXME: サインイン処理を実装
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ListPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const ListPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    padding: const .symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: .circular(8)),
                   ),
                   child: const Text(
                     'ログイン',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: .bold),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const Gap(24),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: .center,
                   children: [
                     const Text('アカウントをお持ちでない方は'),
                     TextButton(
@@ -120,7 +107,7 @@ class SignInPage extends StatelessWidget {
                   ],
                 ),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: .center,
                   children: [
                     const Text('パスワードを忘れた方は'),
                     TextButton(

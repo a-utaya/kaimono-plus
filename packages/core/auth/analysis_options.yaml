@@ -1,4 +1,2 @@
-include: package:flutter_lints/flutter.yaml
-
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+include: ../../../analysis_options.yaml
+# auth パッケージでのみ適用したい設定があれば以下に追記
