@@ -8,3 +8,5 @@ workspace:
   - packages/core/auth
 dev_dependencies:
   melos: ^7.3.0
+dependencies:
+  altive_lints: ^2.1.0
