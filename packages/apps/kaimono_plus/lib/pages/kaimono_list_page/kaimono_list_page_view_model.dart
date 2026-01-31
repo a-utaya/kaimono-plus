@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 
-import 'components/kaimono_list_item.part.dart';
+class KaimonoItem {
+  final String id;
+  final String text;
+  bool isCompleted;
+
+  KaimonoItem({required this.id, required this.text, this.isCompleted = false});
+}
 
 class KaimonoListPageViewModel extends ChangeNotifier {
-  final List<KaimonoListItem> _items = [];
+  final List<KaimonoItem> _items = [];
   final ScrollController _scrollController = ScrollController();
   String? _editingItemId;
   final Map<String, TextEditingController> _itemControllers = {};
 
   ScrollController get scrollController => _scrollController;
-  List<KaimonoListItem> get items => List.unmodifiable(_items);
+  List<KaimonoItem> get items => List.unmodifiable(_items);
   String? get editingItemId => _editingItemId;
 
   TextEditingController? getControllerForItem(String id) {
@@ -75,7 +81,7 @@ class KaimonoListPageViewModel extends ChangeNotifier {
 
     final index = _items.indexWhere((item) => item.id == id);
     if (index != -1) {
-      _items[index] = KaimonoListItem(
+      _items[index] = KaimonoItem(
         id: _items[index].id,
         text: trimmedText,
         isCompleted: _items[index].isCompleted,
@@ -86,7 +92,7 @@ class KaimonoListPageViewModel extends ChangeNotifier {
 
   void addItem() {
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
-    _items.add(KaimonoListItem(id: newId, text: ''));
+    _items.add(KaimonoItem(id: newId, text: ''));
     debugPrint('addItem: 新しいアイテムを追加します');
     notifyListeners();
 
@@ -118,6 +124,15 @@ class KaimonoListPageViewModel extends ChangeNotifier {
     if (_editingItemId == id) {
       _editingItemId = null;
     }
+    notifyListeners();
+  }
+
+  void reorderItems(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = _items.removeAt(oldIndex);
+    _items.insert(newIndex, item);
     notifyListeners();
   }
 
