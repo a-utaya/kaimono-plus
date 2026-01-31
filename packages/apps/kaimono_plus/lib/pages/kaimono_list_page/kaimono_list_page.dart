@@ -40,21 +40,22 @@ class KaimonoListPage extends StatelessWidget {
           body: Container(
             height: double.infinity,
             color: Colors.grey[100],
-            child: ListView.builder(
-              controller: vm.scrollController,
-              itemCount: vm.items.length,
+            child: ReorderableListView.builder(
               padding: const .all(16.0),
+              itemCount: vm.items.length,
               itemBuilder: (context, index) {
                 final item = vm.items[index];
                 final isEditing = vm.editingItemId == item.id;
                 final controller = vm.getControllerForItem(item.id);
 
                 return KaimonoListItem(
+                  key: ValueKey(item.id),
                   item: item,
                   isEditing: isEditing,
                   controller: controller!,
                 );
               },
+              onReorder: vm.reorderItems,
             ),
           ),
         );

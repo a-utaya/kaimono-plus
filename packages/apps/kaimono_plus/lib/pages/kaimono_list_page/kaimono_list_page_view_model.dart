@@ -127,6 +127,15 @@ class KaimonoListPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reorderItems(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = _items.removeAt(oldIndex);
+    _items.insert(newIndex, item);
+    notifyListeners();
+  }
+
   void clearAllItems() {
     for (final controller in _itemControllers.values) {
       controller.dispose();
