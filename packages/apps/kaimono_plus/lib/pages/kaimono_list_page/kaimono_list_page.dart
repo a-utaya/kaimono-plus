@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import 'kaimono_list_page_view_model.dart';
 
+part 'components/kaimono_list_item.part.dart';
+
 class KaimonoListPage extends StatelessWidget {
   const KaimonoListPage({super.key});
 
@@ -47,113 +49,10 @@ class KaimonoListPage extends StatelessWidget {
                 final isEditing = vm.editingItemId == item.id;
                 final controller = vm.getControllerForItem(item.id);
 
-                return Container(
-                  margin: const .only(bottom: 8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: InkWell(
-                    onTap: () {
-                      if (!isEditing) {
-                        vm.startEditing(item.id);
-                      }
-                    },
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: const .only(left: 16.0),
-                          child: InkWell(
-                            onTap: () {
-                              vm.toggleItem(item.id);
-                            },
-                            borderRadius: BorderRadius.circular(4),
-                            child: Padding(
-                              padding: const .all(4.0),
-                              child: item.isCompleted
-                                  ? const Icon(
-                                      Icons.check_box,
-                                      color: Colors.amber,
-                                      size: 24,
-                                    )
-                                  : Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.grey[600]!,
-                                          width: 1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                        const Gap(8),
-                        Expanded(
-                          child: Padding(
-                            padding: const .symmetric(vertical: 16.0),
-                            child: isEditing && controller != null
-                                ? TextField(
-                                    controller: controller,
-                                    cursorColor: Colors.amber,
-                                    autofocus: true,
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      enabledBorder: InputBorder.none,
-                                      focusedBorder: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: .zero,
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      height: 1.5,
-                                    ),
-                                    onChanged: (text) {
-                                      // リアルタイムで保存
-                                      vm.updateItemText(
-                                        item.id,
-                                        text,
-                                        removeIfEmpty: false,
-                                      );
-                                    },
-                                    onSubmitted: (_) {
-                                      vm.stopEditing(item.id);
-                                    },
-                                    onEditingComplete: () {
-                                      vm.stopEditing(item.id);
-                                    },
-                                  )
-                                : Text(
-                                    item.text,
-                                    style: TextStyle(
-                                      color: item.isCompleted
-                                          ? Colors.grey[400]
-                                          : Colors.grey[700],
-                                      fontSize: 16,
-                                      height: 1.5,
-                                      decoration: item.isCompleted
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () {
-                            vm.removeItem(item.id);
-                          },
-                          icon: Icon(
-                            Icons.cancel,
-                            color: Colors.grey[400],
-                            size: 24,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                return KaimonoListItem(
+                  item: item,
+                  isEditing: isEditing,
+                  controller: controller!,
                 );
               },
             ),
