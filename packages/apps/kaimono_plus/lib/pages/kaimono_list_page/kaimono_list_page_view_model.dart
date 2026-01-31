@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import 'list_item.dart';
+import 'components/kaimono_list_item.part.dart';
 
-class ListPageViewModel extends ChangeNotifier {
-  final List<ListItem> _items = [];
+class KaimonoListPageViewModel extends ChangeNotifier {
+  final List<KaimonoListItem> _items = [];
   final ScrollController _scrollController = ScrollController();
   String? _editingItemId;
   final Map<String, TextEditingController> _itemControllers = {};
 
   ScrollController get scrollController => _scrollController;
-  List<ListItem> get items => List.unmodifiable(_items);
+  List<KaimonoListItem> get items => List.unmodifiable(_items);
   String? get editingItemId => _editingItemId;
 
   TextEditingController? getControllerForItem(String id) {
@@ -75,7 +75,7 @@ class ListPageViewModel extends ChangeNotifier {
 
     final index = _items.indexWhere((item) => item.id == id);
     if (index != -1) {
-      _items[index] = ListItem(
+      _items[index] = KaimonoListItem(
         id: _items[index].id,
         text: trimmedText,
         isCompleted: _items[index].isCompleted,
@@ -86,12 +86,7 @@ class ListPageViewModel extends ChangeNotifier {
 
   void addItem() {
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
-    _items.add(
-      ListItem(
-        id: newId,
-        text: '',
-      ),
-    );
+    _items.add(KaimonoListItem(id: newId, text: ''));
     debugPrint('addItem: 新しいアイテムを追加します');
     notifyListeners();
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
-import 'list_page.dart';
-import 'password_reset_page.dart';
-import 'sign_up_page.dart';
+import '../ sign_up_page/sign_up_page.dart';
+import '../kaimono_list_page/kaimono_list_page.dart';
+import '../password_reset_page/password_reset_page.dart';
 
 class SignInPage extends StatelessWidget {
   const SignInPage({super.key});
@@ -74,7 +74,9 @@ class SignInPage extends StatelessWidget {
                   onPressed: () {
                     // FIXME: サインイン処理を実装
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const ListPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const KaimonoListPage(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(

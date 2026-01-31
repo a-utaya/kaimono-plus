@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'pages/list_page_view_model.dart';
-import 'pages/sign_in_page.dart';
+import 'pages/kaimono_list_page/kaimono_list_page_view_model.dart';
+import 'pages/sign_in_page/sign_in_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,9 +16,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => ListPageViewModel(),
-        ),
+        ChangeNotifierProvider(create: (_) => KaimonoListPageViewModel()),
       ],
       child: MaterialApp(
         title: 'Kaimono Plus',
