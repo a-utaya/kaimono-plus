@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 
-import 'list_page_view_model.dart';
+import 'kaimono_list_page_view_model.dart';
 
-class ListPage extends StatelessWidget {
-  const ListPage({super.key});
+class KaimonoListPage extends StatelessWidget {
+  const KaimonoListPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ListPageViewModel>(
+    return Consumer<KaimonoListPageViewModel>(
       builder: (context, vm, child) {
         return Scaffold(
           appBar: AppBar(
@@ -19,19 +19,13 @@ class ListPage extends StatelessWidget {
               onPressed: () {
                 _showDeleteAllDialog(context, vm);
               },
-              icon: const Icon(
-                Icons.delete_outline,
-                color: Colors.white,
-              ),
+              icon: const Icon(Icons.delete_outline, color: Colors.white),
             ),
             actions: [
               IconButton(
                 // FIXME: シェアボタンの実装
                 onPressed: () {},
-                icon: const Icon(
-                  Icons.ios_share,
-                  color: Colors.white,
-                ),
+                icon: const Icon(Icons.ios_share, color: Colors.white),
               ),
             ],
           ),
@@ -39,10 +33,7 @@ class ListPage extends StatelessWidget {
             onPressed: () => vm.addItem(),
             backgroundColor: Colors.amber,
             shape: const CircleBorder(),
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.add, color: Colors.white),
           ),
           body: Container(
             height: double.infinity,
@@ -50,14 +41,14 @@ class ListPage extends StatelessWidget {
             child: ListView.builder(
               controller: vm.scrollController,
               itemCount: vm.items.length,
-              padding: const EdgeInsets.all(16.0),
+              padding: const .all(16.0),
               itemBuilder: (context, index) {
                 final item = vm.items[index];
                 final isEditing = vm.editingItemId == item.id;
                 final controller = vm.getControllerForItem(item.id);
 
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 8.0),
+                  margin: const .only(bottom: 8.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
@@ -71,14 +62,14 @@ class ListPage extends StatelessWidget {
                     child: Row(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 16.0),
+                          padding: const .only(left: 16.0),
                           child: InkWell(
                             onTap: () {
                               vm.toggleItem(item.id);
                             },
                             borderRadius: BorderRadius.circular(4),
                             child: Padding(
-                              padding: const EdgeInsets.all(4.0),
+                              padding: const .all(4.0),
                               child: item.isCompleted
                                   ? const Icon(
                                       Icons.check_box,
@@ -102,7 +93,7 @@ class ListPage extends StatelessWidget {
                         const Gap(8),
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            padding: const .symmetric(vertical: 16.0),
                             child: isEditing && controller != null
                                 ? TextField(
                                     controller: controller,
@@ -113,7 +104,7 @@ class ListPage extends StatelessWidget {
                                       enabledBorder: InputBorder.none,
                                       focusedBorder: InputBorder.none,
                                       isDense: true,
-                                      contentPadding: EdgeInsets.zero,
+                                      contentPadding: .zero,
                                     ),
                                     style: const TextStyle(
                                       fontSize: 16,
@@ -121,8 +112,11 @@ class ListPage extends StatelessWidget {
                                     ),
                                     onChanged: (text) {
                                       // リアルタイムで保存
-                                      vm.updateItemText(item.id, text,
-                                          removeIfEmpty: false);
+                                      vm.updateItemText(
+                                        item.id,
+                                        text,
+                                        removeIfEmpty: false,
+                                      );
                                     },
                                     onSubmitted: (_) {
                                       vm.stopEditing(item.id);
@@ -169,10 +163,7 @@ class ListPage extends StatelessWidget {
     );
   }
 
-  void _showDeleteAllDialog(
-    BuildContext context,
-    ListPageViewModel vm,
-  ) {
+  void _showDeleteAllDialog(BuildContext context, KaimonoListPageViewModel vm) {
     if (vm.items.isEmpty) return;
     showDialog(
       context: context,
@@ -181,10 +172,7 @@ class ListPage extends StatelessWidget {
           title: const Center(
             child: Text(
               '全件削除',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           content: const Text('すべてのアイテムを削除しますか？'),
@@ -201,9 +189,7 @@ class ListPage extends StatelessWidget {
                     vm.clearAllItems();
                     Navigator.of(dialogContext).pop();
                   },
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
                   child: const Text('削除'),
                 ),
               ],
