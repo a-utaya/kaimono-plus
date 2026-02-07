@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 
 class KaimonoItem {
@@ -91,7 +92,7 @@ class KaimonoListPageViewModel extends ChangeNotifier {
   }
 
   void addItem() {
-    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final newId = clock.now().millisecondsSinceEpoch.toString();
     _items.add(KaimonoItem(id: newId, text: ''));
     debugPrint('addItem: 新しいアイテムを追加します');
     notifyListeners();
