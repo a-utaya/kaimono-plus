@@ -16,12 +16,14 @@ dependencies:
   gap: ^3.0.1
   auth:
     path: ../../core/auth
+  hooks_riverpod: ^3.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^3.0.0
+  riverpod_lint: ^3.0.0-dev.4
 
 flutter:
   uses-material-design: true

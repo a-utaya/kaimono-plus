@@ -9,5 +9,5 @@ workspace:
 dev_dependencies:
   melos: ^7.3.0
 dependencies:
-  altive_lints: ^2.1.0
+  altive_lints: ^1.0.0
   clock: ^1.1.2
