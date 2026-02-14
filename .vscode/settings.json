@@ -1,7 +1,8 @@
 {
   "cSpell.words": [
     "altive",
-    "kaimono"
+    "kaimono",
+    "riverpod"
   ],
   "dart.flutterSdkPath": ".fvm/versions/3.38.4",
   "editor.formatOnSave": true,
@@ -19,5 +20,8 @@
   },
   "dart.lineLength": 80,
   "dart.previewFlutterUiGuides": true,
-  "dart.previewFlutterUiGuidesCustomTracking": true
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "[yaml]": {
+    "editor.formatOnSave": false
+  }
 }
