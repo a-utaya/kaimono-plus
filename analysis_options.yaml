@@ -1,1 +1,15 @@
-include: package:flutter_lints/flutter.yaml
+include: package:altive_lints/altive_lints.yaml
+
+linter:
+  rules:
+    # Explicitly disable one lint rule.
+    - public_member_api_docs: false
+
+plugins:
+  altive_lints:
+    version: ^2.0.0
+    diagnostics:
+      # Explicitly disable one analysis rule.
+      avoid_hardcoded_color: false
+      avoid_hardcoded_japanese: false
+      avoid_shrink_wrap_in_list_view: false

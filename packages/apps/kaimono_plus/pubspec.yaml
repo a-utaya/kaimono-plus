@@ -1,6 +1,6 @@
 name: kaimono_plus
 description: A new Flutter project.
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -11,10 +11,14 @@ resolution: workspace
 dependencies:
   auth:
     path: ../../core/auth
+  design_system:
+    path: ../../design_system
   flutter:
     sdk: flutter
   gap: ^3.0.1
+  hooks_riverpod: ^3.2.1
   provider: ^6.1.1
+  riverpod_lint: ^3.1.3
 
 dev_dependencies:
   altive_lints: ^2.1.0

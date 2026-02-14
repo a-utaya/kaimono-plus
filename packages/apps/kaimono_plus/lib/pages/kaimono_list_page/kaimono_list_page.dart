@@ -65,7 +65,7 @@ class KaimonoListPage extends StatelessWidget {
 
   void _showDeleteAllDialog(BuildContext context, KaimonoListPageViewModel vm) {
     if (vm.items.isEmpty) return;
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(

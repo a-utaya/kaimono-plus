@@ -1,0 +1,21 @@
+name: design_system
+description: デザインシステムパッケージ（テーマ、カラー、タイポグラフィなど）
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.10.3
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  altive_lints: ^2.1.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

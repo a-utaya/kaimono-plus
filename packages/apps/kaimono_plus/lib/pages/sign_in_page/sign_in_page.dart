@@ -74,7 +74,7 @@ class SignInPage extends StatelessWidget {
                   onPressed: () {
                     // FIXME: サインイン処理を実装
                     Navigator.of(context).push(
-                      MaterialPageRoute(
+                      MaterialPageRoute<void>(
                         builder: (context) => const KaimonoListPage(),
                       ),
                     );
@@ -98,7 +98,7 @@ class SignInPage extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(
+                          MaterialPageRoute<void>(
                             builder: (context) => const SignUpPage(),
                             fullscreenDialog: true,
                           ),
@@ -114,7 +114,7 @@ class SignInPage extends StatelessWidget {
                     const Text('パスワードを忘れた方は'),
                     TextButton(
                       onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
+                        MaterialPageRoute<void>(
                           builder: (context) => const PasswordResetPage(),
                           fullscreenDialog: true,
                         ),
