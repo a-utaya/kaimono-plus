@@ -13,6 +13,8 @@ dependencies:
     path: ../../core/auth
   design_system:
     path: ../../design_system
+  firebase_auth: ^6.1.4
+  firebase_core: ^4.4.0
   flutter:
     sdk: flutter
   gap: ^3.0.1
