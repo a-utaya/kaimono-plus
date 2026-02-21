@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "908859080638",
+    "project_id": "kaimono-plus",
+    "storage_bucket": "kaimono-plus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:908859080638:android:3d22dafbcfcd032cc343ef",
+        "android_client_info": {
+          "package_name": "com.example.kaimono_plus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaeG2n3t6W4SxptGx3xcH4VZsJ8xE4pz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
