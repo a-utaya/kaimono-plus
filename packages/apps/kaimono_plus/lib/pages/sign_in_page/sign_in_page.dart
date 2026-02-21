@@ -28,7 +28,10 @@ class SignInPage extends StatelessWidget {
                 const SizedBox(height: 32),
                 const Text(
                   'ログイン',
-                  style: TextStyle(fontSize: 28, fontWeight: .bold),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: .center,
                 ),
                 const SizedBox(height: 48),

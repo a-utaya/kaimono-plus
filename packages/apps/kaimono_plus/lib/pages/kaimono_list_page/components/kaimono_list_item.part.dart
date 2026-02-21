@@ -5,16 +5,18 @@ class KaimonoListItem extends StatelessWidget {
     required this.item,
     required this.isEditing,
     required this.controller,
+    required this.viewModel,
     super.key,
   });
 
   final KaimonoItem item;
   final bool isEditing;
   final TextEditingController controller;
+  final KaimonoListPageViewModel viewModel;
 
   @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<KaimonoListPageViewModel>(context, listen: false);
+    final vm = viewModel;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8.0),
