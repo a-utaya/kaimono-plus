@@ -3,8 +3,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../ui/app_snack_bar.dart';
 import 'sign_up_page_view_model.dart';
 
+/// 新規会員登録画面
 class SignUpPage extends StatelessWidget {
   const SignUpPage({super.key});
 
@@ -20,8 +22,9 @@ class _SignUpPageContent extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch<SignUpState>(signUpPageViewModelProvider);
-    final notifier =
-        ref.read<SignUpPageViewModel>(signUpPageViewModelProvider.notifier);
+    final notifier = ref.read<SignUpPageViewModel>(
+      signUpPageViewModelProvider.notifier,
+    );
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final passwordConfirmController = useTextEditingController();
@@ -30,6 +33,7 @@ class _SignUpPageContent extends HookConsumerWidget {
     useListenable(passwordController);
     useListenable(passwordConfirmController);
 
+    /// 登録ボタン押下時の処理。成功時はモーダルを閉じて SnackBar で完了を表示する。
     Future<void> handleSignUp() async {
       final message = await notifier.signUp(
         email: emailController.text,
@@ -39,9 +43,9 @@ class _SignUpPageContent extends HookConsumerWidget {
       if (!context.mounted) return;
       if (message == null) {
         Navigator.of(context).pop();
-        _showSnackBar(context, 'アカウントを作成しました');
+        showAppSnackBar(context, 'アカウントを作成しました');
       } else {
-        _showSnackBar(context, message);
+        showAppSnackBar(context, message, isError: true);
       }
     }
 
@@ -166,6 +170,7 @@ class _SignUpPageContent extends HookConsumerWidget {
     );
   }
 
+  /// メール・パスワード欄で共通利用する InputDecoration。
   InputDecoration _inputDecoration() {
     return InputDecoration(
       filled: true,
@@ -182,9 +187,5 @@ class _SignUpPageContent extends HookConsumerWidget {
     );
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
+  // SnackBar は共通ヘルパーへ切り出し: showAppSnackBar
 }

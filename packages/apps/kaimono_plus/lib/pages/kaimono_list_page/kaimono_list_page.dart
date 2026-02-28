@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
+import '../../components/confirm_dialog.dart';
 import 'kaimono_list_page_view_model.dart';
 
 part 'components/kaimono_list_item.part.dart';
@@ -11,14 +12,35 @@ class KaimonoListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch<KaimonoListPageViewModel>(kaimonoListPageViewModelProvider);
+    final vm = ref.watch<KaimonoListPageViewModel>(
+      kaimonoListPageViewModelProvider,
+    );
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
         title: const Text('買い物リスト'),
         leading: IconButton(
-          onPressed: () => _showDeleteAllDialog(context, vm),
+          onPressed: () {
+            // アイテムがない場合は何もしない
+            if (vm.items.isEmpty) return;
+
+            // 全件削除確認ダイアログを表示
+            showDialog<void>(
+              context: context,
+              builder: (dialogContext) => ConfirmDialog(
+                title: '全件削除',
+                content: 'すべてのアイテムを削除しますか？',
+                confirmText: '削除',
+                isDestructive: true,
+                onCancel: () => Navigator.of(dialogContext).pop(),
+                onConfirm: () {
+                  vm.clearAllItems();
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+            );
+          },
           icon: const Icon(Icons.delete_outline, color: Colors.white),
         ),
         actions: [
@@ -57,43 +79,6 @@ class KaimonoListPage extends ConsumerWidget {
           onReorder: vm.reorderItems,
         ),
       ),
-    );
-  }
-
-  void _showDeleteAllDialog(BuildContext context, KaimonoListPageViewModel vm) {
-    if (vm.items.isEmpty) return;
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Center(
-            child: Text(
-              '全件削除',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          content: const Text('すべてのアイテムを削除しますか？'),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('キャンセル'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    vm.clearAllItems();
-                    Navigator.of(dialogContext).pop();
-                  },
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('削除'),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
     );
   }
 }
