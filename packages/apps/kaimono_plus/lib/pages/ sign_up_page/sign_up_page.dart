@@ -19,7 +19,9 @@ class _SignUpPageContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch<SignUpPageViewModel>(signUpPageViewModelProvider);
+    final state = ref.watch<SignUpState>(signUpPageViewModelProvider);
+    final notifier =
+        ref.read<SignUpPageViewModel>(signUpPageViewModelProvider.notifier);
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final passwordConfirmController = useTextEditingController();
@@ -29,7 +31,7 @@ class _SignUpPageContent extends HookConsumerWidget {
     useListenable(passwordConfirmController);
 
     Future<void> handleSignUp() async {
-      final message = await vm.signUp(
+      final message = await notifier.signUp(
         email: emailController.text,
         password: passwordController.text,
         passwordConfirm: passwordConfirmController.text,
@@ -72,7 +74,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                   decoration: _inputDecoration().copyWith(labelText: 'メールアドレス'),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
-                  enabled: !vm.isLoading,
+                  enabled: !state.isLoading,
                 ),
                 const Gap(16),
                 TextField(
@@ -93,7 +95,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                   ),
                   obscureText: obscurePassword.value,
                   autofillHints: const [AutofillHints.password],
-                  enabled: !vm.isLoading,
+                  enabled: !state.isLoading,
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -113,11 +115,11 @@ class _SignUpPageContent extends HookConsumerWidget {
                   ),
                   obscureText: obscurePasswordConfirm.value,
                   autofillHints: const [AutofillHints.password],
-                  enabled: !vm.isLoading,
+                  enabled: !state.isLoading,
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
-                  onPressed: vm.isLoading ? null : handleSignUp,
+                  onPressed: state.isLoading ? null : handleSignUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
                     foregroundColor: Colors.white,
@@ -126,7 +128,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: vm.isLoading
+                  child: state.isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
@@ -149,7 +151,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                   children: [
                     const Text('既にアカウントをお持ちですか？ '),
                     TextButton(
-                      onPressed: vm.isLoading
+                      onPressed: state.isLoading
                           ? null
                           : () => Navigator.of(context).pop(),
                       child: const Text('ログイン'),

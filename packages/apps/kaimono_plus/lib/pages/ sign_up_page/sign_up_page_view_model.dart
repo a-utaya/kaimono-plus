@@ -1,16 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final signUpPageViewModelProvider =
-    ChangeNotifierProvider.autoDispose<SignUpPageViewModel>(
-      (ref) => SignUpPageViewModel(),
-    );
+part 'sign_up_page_view_model.g.dart';
 
-class SignUpPageViewModel extends ChangeNotifier {
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+/// サインアップ画面の状態
+class SignUpState {
+  const SignUpState({this.isLoading = false});
+
+  final bool isLoading;
+
+  SignUpState copyWith({bool? isLoading}) =>
+      SignUpState(isLoading: isLoading ?? this.isLoading);
+}
+
+@riverpod
+class SignUpPageViewModel extends _$SignUpPageViewModel {
+  @override
+  SignUpState build() => const SignUpState();
 
   /// 新規登録を実行する。
   /// 成功時は null、失敗時は表示用のエラーメッセージを返す。
@@ -20,12 +27,9 @@ class SignUpPageViewModel extends ChangeNotifier {
     required String passwordConfirm,
   }) async {
     final validationError = _validate(email, password, passwordConfirm);
-    if (validationError != null) {
-      return validationError;
-    }
+    if (validationError != null) return validationError;
 
-    _isLoading = true;
-    notifyListeners();
+    state = state.copyWith(isLoading: true);
 
     try {
       final credential = await FirebaseAuth.instance
@@ -33,7 +37,6 @@ class SignUpPageViewModel extends ChangeNotifier {
             email: email.trim(),
             password: password,
           );
-
       final user = credential.user;
 
       if (user != null) {
@@ -50,14 +53,14 @@ class SignUpPageViewModel extends ChangeNotifier {
         return 'Firestore への保存に失敗しました。コンソールのセキュリティルールを確認してください。';
       }
       final msg = e.message ?? '';
+
       if (msg.contains('connection on channel') ||
           msg.contains('UNAVAILABLE')) {
         return '通信に失敗しました。ネットワークを確認して、しばらく経ってから再度お試しください。';
       }
       return '登録に失敗しました: $msg';
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      state = state.copyWith(isLoading: false);
     }
   }
 
