@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 class KaimonoItem {
   final String id;
@@ -8,6 +9,11 @@ class KaimonoItem {
 
   KaimonoItem({required this.id, required this.text, this.isCompleted = false});
 }
+
+final kaimonoListPageViewModelProvider = ChangeNotifierProvider.autoDispose<
+    KaimonoListPageViewModel>(
+  (ref) => KaimonoListPageViewModel(),
+);
 
 class KaimonoListPageViewModel extends ChangeNotifier {
   final List<KaimonoItem> _items = [];
