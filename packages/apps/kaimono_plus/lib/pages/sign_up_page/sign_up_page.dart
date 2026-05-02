@@ -83,7 +83,6 @@ class _SignUpPageContent extends HookConsumerWidget {
                   controller: passwordController,
                   decoration: _inputDecoration().copyWith(
                     labelText: 'パスワード（半角英数字6文字以上）',
-                    counterText: '${passwordController.text.length}/6',
                     suffixIcon: IconButton(
                       icon: Icon(
                         obscurePassword.value
