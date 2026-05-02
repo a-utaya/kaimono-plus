@@ -7,13 +7,17 @@ class KaimonoItem {
   final String text;
   bool isCompleted;
 
-  KaimonoItem({required this.id, required this.text, this.isCompleted = false});
+  KaimonoItem({
+    required this.id,
+    required this.text,
+    this.isCompleted = false,
+  });
 }
 
-final kaimonoListPageViewModelProvider = ChangeNotifierProvider.autoDispose<
-    KaimonoListPageViewModel>(
-  (ref) => KaimonoListPageViewModel(),
-);
+final kaimonoListPageViewModelProvider =
+    ChangeNotifierProvider.autoDispose<KaimonoListPageViewModel>(
+      (ref) => KaimonoListPageViewModel(),
+    );
 
 class KaimonoListPageViewModel extends ChangeNotifier {
   final List<KaimonoItem> _items = [];
