@@ -1,14 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sign_up_page_view_model.g.dart';
 
 /// サインアップ画面の状態
-class SignUpState {
+@immutable
+class SignUpState extends Equatable {
   const SignUpState({this.isLoading = false});
 
   final bool isLoading;
+
+  @override
+  List<Object?> get props => [isLoading];
 
   SignUpState copyWith({bool? isLoading}) =>
       SignUpState(isLoading: isLoading ?? this.isLoading);
