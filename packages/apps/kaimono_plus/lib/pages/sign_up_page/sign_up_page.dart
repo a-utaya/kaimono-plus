@@ -31,6 +31,20 @@ class _SignUpPageContent extends HookConsumerWidget {
     useListenable(passwordController);
     useListenable(passwordConfirmController);
 
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Colors.amber),
+      ),
+    );
+
     /// 登録ボタン押下時の処理。成功時はモーダルを閉じて SnackBar で完了を表示する。
     Future<void> handleSignUp() async {
       final message = await notifier.signUp(
@@ -73,7 +87,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const Gap(48),
                 TextField(
                   controller: emailController,
-                  decoration: _inputDecoration().copyWith(labelText: 'メールアドレス'),
+                  decoration: inputDecoration.copyWith(labelText: 'メールアドレス'),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   enabled: !state.isLoading,
@@ -81,7 +95,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const Gap(16),
                 TextField(
                   controller: passwordController,
-                  decoration: _inputDecoration().copyWith(
+                  decoration: inputDecoration.copyWith(
                     labelText: 'パスワード（半角英数字6文字以上）',
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -101,7 +115,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const SizedBox(height: 16),
                 TextField(
                   controller: passwordConfirmController,
-                  decoration: _inputDecoration().copyWith(
+                  decoration: inputDecoration.copyWith(
                     labelText: 'パスワード確認',
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -166,23 +180,4 @@ class _SignUpPageContent extends HookConsumerWidget {
       ),
     );
   }
-
-  /// メール・パスワード欄で共通利用する InputDecoration。
-  InputDecoration _inputDecoration() {
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.amber),
-      ),
-    );
-  }
-
-  // SnackBar は共通ヘルパーへ切り出し: showAppSnackBar
 }

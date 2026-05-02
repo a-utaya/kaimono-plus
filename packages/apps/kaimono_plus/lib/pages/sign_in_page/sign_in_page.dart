@@ -3,10 +3,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../ sign_up_page/sign_up_page.dart';
 import '../../ui/app_snack_bar.dart';
 import '../kaimono_list_page/kaimono_list_page.dart';
 import '../password_reset_page/password_reset_page.dart';
+import '../sign_up_page/sign_up_page.dart';
 import 'sign_in_page_view_model.dart';
 
 class SignInPage extends StatelessWidget {
