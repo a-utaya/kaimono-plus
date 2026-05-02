@@ -9,17 +9,8 @@ import '../password_reset_page/password_reset_page.dart';
 import '../sign_up_page/sign_up_page.dart';
 import 'sign_in_page_view_model.dart';
 
-class SignInPage extends StatelessWidget {
+class SignInPage extends HookConsumerWidget {
   const SignInPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const _SignInPageContent();
-  }
-}
-
-class _SignInPageContent extends HookConsumerWidget {
-  const _SignInPageContent();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
