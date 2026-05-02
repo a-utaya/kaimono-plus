@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
@@ -31,19 +32,7 @@ class _SignUpPageContent extends HookConsumerWidget {
     useListenable(passwordController);
     useListenable(passwordConfirmController);
 
-    final inputDecoration = InputDecoration(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.amber),
-      ),
-    );
+    final inputDecoration = AppInputDecoration.authOutlined;
 
     /// 登録ボタン押下時の処理。成功時はモーダルを閉じて SnackBar で完了を表示する。
     Future<void> handleSignUp() async {

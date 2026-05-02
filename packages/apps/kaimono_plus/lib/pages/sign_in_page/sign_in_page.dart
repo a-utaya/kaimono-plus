@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
@@ -22,6 +23,7 @@ class SignInPage extends HookConsumerWidget {
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final obscurePassword = useState(true);
+    final inputDecoration = AppInputDecoration.authOutlined;
 
     /// ログインボタン押下時の処理
     Future<void> handleSignIn() async {
@@ -70,7 +72,7 @@ class SignInPage extends HookConsumerWidget {
                 const Gap(48),
                 TextField(
                   controller: emailController,
-                  decoration: _inputDecoration().copyWith(labelText: 'メールアドレス'),
+                  decoration: inputDecoration.copyWith(labelText: 'メールアドレス'),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   enabled: !state.isLoading,
@@ -78,7 +80,7 @@ class SignInPage extends HookConsumerWidget {
                 const Gap(16),
                 TextField(
                   controller: passwordController,
-                  decoration: _inputDecoration().copyWith(
+                  decoration: inputDecoration.copyWith(
                     labelText: 'パスワード',
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -164,23 +166,6 @@ class SignInPage extends HookConsumerWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  /// メール・パスワード欄で共通利用する InputDecoration。
-  InputDecoration _inputDecoration() {
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.amber),
       ),
     );
   }
