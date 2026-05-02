@@ -21,10 +21,8 @@ class _SignUpPageContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch<SignUpState>(signUpPageViewModelProvider);
-    final notifier = ref.read<SignUpPageViewModel>(
-      signUpPageViewModelProvider.notifier,
-    );
+    final state = ref.watch(signUpPageViewModelProvider);
+    final notifier = ref.watch(signUpPageViewModelProvider.notifier);
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final passwordConfirmController = useTextEditingController();
