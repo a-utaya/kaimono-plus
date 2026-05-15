@@ -34,7 +34,7 @@ final class SignInPageViewModelProvider
 }
 
 String _$signInPageViewModelHash() =>
-    r'cd4c2d55e17c78d86c4c90aa1d1fc194caf8554f';
+    r'7a7f09a15e283dcefaaea8fc7b602ca344f28804';
 
 abstract class _$SignInPageViewModel extends $AsyncNotifier<void> {
   FutureOr<void> build();

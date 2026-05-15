@@ -11,11 +11,9 @@ resolution: workspace
 dependencies:
   auth:
     path: ../../core/auth
-  cloud_firestore: ^6.1.2
   design_system:
     path: ../../design_system
   equatable: ^2.0.8
-  firebase_auth: ^6.1.4
   firebase_core: ^4.4.0
   flutter:
     sdk: flutter

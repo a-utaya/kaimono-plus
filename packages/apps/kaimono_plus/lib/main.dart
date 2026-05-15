@@ -1,5 +1,5 @@
+import 'package:auth/auth.dart';
 import 'package:design_system/design_system.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'pages/kaimono_list_page/kaimono_list_page.dart';
 import 'pages/sign_in_page/sign_in_page.dart';
+import 'providers/authenticator_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,13 +35,15 @@ class MyApp extends StatelessWidget {
 }
 
 /// 起動時に認証状態を確認し、ログイン済みならリスト画面・未ログインならログイン画面を表示する
-class _AuthGate extends StatelessWidget {
+class _AuthGate extends ConsumerWidget {
   const _AuthGate();
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authenticatorProvider).authStateChanges;
+
+    return StreamBuilder<AuthUser?>(
+      stream: authState,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(

@@ -1,7 +1,6 @@
 library auth;
 
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+export 'src/authenticator.dart';
+export 'src/exceptions/auth_exception.dart';
+export 'src/firebase/firebase_authenticator.dart';
+export 'src/models/auth_user.dart';

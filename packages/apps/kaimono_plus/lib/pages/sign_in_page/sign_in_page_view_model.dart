@@ -1,5 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:auth/auth.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../providers/authenticator_provider.dart';
 
 part 'sign_in_page_view_model.g.dart';
 
@@ -17,32 +19,12 @@ class SignInPageViewModel extends _$SignInPageViewModel {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       try {
-        final credential = await FirebaseAuth.instance
-            .signInWithEmailAndPassword(
-              email: email.trim(),
+        await ref.read(authenticatorProvider).signInWithEmailAndPassword(
+              email: email,
               password: password,
             );
-
-        if (credential.user == null) {
-          throw const SignInException('サインインに失敗しました');
-        }
-      } on FirebaseAuthException catch (e) {
-        throw SignInException(_authErrorMessage(e.code));
-      } on FirebaseException catch (e) {
-        if (e.code == 'permission-denied') {
-          throw const SignInException(
-            'Firestore への保存に失敗しました。コンソールのセキュリティルールを確認してください。',
-          );
-        }
-
-        final message = e.message ?? '';
-        if (message.contains('connection on channel') ||
-            message.contains('UNAVAILABLE')) {
-          throw const SignInException(
-            '通信に失敗しました。ネットワークを確認して、しばらく経ってから再度お試しください。',
-          );
-        }
-        throw SignInException('サインインに失敗しました: $message');
+      } on AuthException catch (e) {
+        throw SignInException(e.message);
       }
     });
   }
@@ -50,20 +32,6 @@ class SignInPageViewModel extends _$SignInPageViewModel {
   /// エラー表示後などにアイドル状態へ戻す
   void reset() {
     state = const AsyncData(null);
-  }
-
-  String _authErrorMessage(String code) {
-    switch (code) {
-      case 'invalid-email':
-      case 'wrong-password':
-        return 'メールアドレスまたはパスワードが間違っています';
-      case 'user-disabled':
-        return 'アカウントが無効です';
-      case 'user-not-found':
-        return 'アカウントが見つかりません';
-      default:
-        return 'サインインに失敗しました';
-    }
   }
 }
 
