@@ -3,57 +3,53 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sign_in_page_view_model.g.dart';
 
-/// サインイン画面の状態
-class SignInState {
-  const SignInState({this.isLoading = false});
-
-  final bool isLoading;
-
-  SignInState copyWith({bool? isLoading}) =>
-      SignInState(isLoading: isLoading ?? this.isLoading);
-}
-
 @riverpod
 class SignInPageViewModel extends _$SignInPageViewModel {
   @override
-  SignInState build() => const SignInState();
+  Future<void> build() async {}
 
-  /// サインインを実行する。
-  /// 成功時は null、失敗時は表示用のエラーメッセージを返す。
-  Future<String?> signIn({
+  /// サインインを実行する
+  /// 成功時は [AsyncData]、失敗時は [SignInException] を含む [AsyncError]
+  Future<void> signIn({
     required String email,
     required String password,
   }) async {
-    state = state.copyWith(isLoading: true);
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      try {
+        final credential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+              email: email.trim(),
+              password: password,
+            );
 
-    try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
+        if (credential.user == null) {
+          throw const SignInException('サインインに失敗しました');
+        }
+      } on FirebaseAuthException catch (e) {
+        throw SignInException(_authErrorMessage(e.code));
+      } on FirebaseException catch (e) {
+        if (e.code == 'permission-denied') {
+          throw const SignInException(
+            'Firestore への保存に失敗しました。コンソールのセキュリティルールを確認してください。',
+          );
+        }
 
-      final user = credential.user;
-
-      if (user != null) {
-        return null;
+        final message = e.message ?? '';
+        if (message.contains('connection on channel') ||
+            message.contains('UNAVAILABLE')) {
+          throw const SignInException(
+            '通信に失敗しました。ネットワークを確認して、しばらく経ってから再度お試しください。',
+          );
+        }
+        throw SignInException('サインインに失敗しました: $message');
       }
-    } on FirebaseAuthException catch (e) {
-      return _authErrorMessage(e.code);
-    } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied') {
-        return 'Firestore への保存に失敗しました。コンソールのセキュリティルールを確認してください。';
-      }
+    });
+  }
 
-      final msg = e.message ?? '';
-      if (msg.contains('connection on channel') ||
-          msg.contains('UNAVAILABLE')) {
-        return '通信に失敗しました。ネットワークを確認して、しばらく経ってから再度お試しください。';
-      }
-      return 'サインインに失敗しました: $msg';
-    } finally {
-      state = state.copyWith(isLoading: false);
-    }
-    return null;
+  /// エラー表示後などにアイドル状態へ戻す
+  void reset() {
+    state = const AsyncData(null);
   }
 
   String _authErrorMessage(String code) {
@@ -69,4 +65,14 @@ class SignInPageViewModel extends _$SignInPageViewModel {
         return 'サインインに失敗しました';
     }
   }
+}
+
+/// サインイン失敗時に [AsyncError] へ載せる例外（表示用メッセージを保持）
+class SignInException implements Exception {
+  const SignInException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }

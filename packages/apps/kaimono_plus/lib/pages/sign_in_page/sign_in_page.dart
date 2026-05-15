@@ -15,34 +15,41 @@ class SignInPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch<SignInState>(signInPageViewModelProvider);
-    final notifier = ref.read<SignInPageViewModel>(
-      signInPageViewModelProvider.notifier,
-    );
+    final signInAsync = ref.watch(signInPageViewModelProvider);
+    final isLoading = signInAsync.isLoading;
 
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final obscurePassword = useState(true);
     final inputDecoration = AppInputDecoration.authOutlined;
 
-    /// ログインボタン押下時の処理
-    Future<void> handleSignIn() async {
-      final message = await notifier.signIn(
-        email: emailController.text,
-        password: passwordController.text,
-      );
+    ref.listen(signInPageViewModelProvider, (previous, next) {
       if (!context.mounted) return;
 
-      if (message == null) {
-        // リスト画面へ入場後はログイン画面に戻らないよう push ではなく pushReplacement で差し替える
+      if (next.hasError) {
+        final error = next.error;
+        final message = error is SignInException
+            ? error.message
+            : 'サインインに失敗しました';
+        showAppSnackBar(context, message, isError: true);
+        ref.read(signInPageViewModelProvider.notifier).reset();
+        return;
+      }
+
+      if (previous?.isLoading == true && next.hasValue) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (context) => const KaimonoListPage(),
           ),
         );
-      } else {
-        showAppSnackBar(context, message, isError: true);
       }
+    });
+
+    Future<void> handleSignIn() {
+      return ref.read(signInPageViewModelProvider.notifier).signIn(
+            email: emailController.text,
+            password: passwordController.text,
+          );
     }
 
     return Scaffold(
@@ -75,7 +82,7 @@ class SignInPage extends HookConsumerWidget {
                   decoration: inputDecoration.copyWith(labelText: 'メールアドレス'),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
-                  enabled: !state.isLoading,
+                  enabled: !isLoading,
                 ),
                 const Gap(16),
                 TextField(
@@ -95,11 +102,11 @@ class SignInPage extends HookConsumerWidget {
                   ),
                   obscureText: obscurePassword.value,
                   autofillHints: const [AutofillHints.password],
-                  enabled: !state.isLoading,
+                  enabled: !isLoading,
                 ),
                 const Gap(32),
                 ElevatedButton(
-                  onPressed: state.isLoading ? null : handleSignIn,
+                  onPressed: isLoading ? null : handleSignIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
                     foregroundColor: Colors.white,
@@ -108,7 +115,7 @@ class SignInPage extends HookConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: state.isLoading
+                  child: isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
@@ -131,7 +138,7 @@ class SignInPage extends HookConsumerWidget {
                   children: [
                     const Text('アカウントをお持ちでない方は'),
                     TextButton(
-                      onPressed: state.isLoading
+                      onPressed: isLoading
                           ? null
                           : () {
                               Navigator.of(context).push(
@@ -150,7 +157,7 @@ class SignInPage extends HookConsumerWidget {
                   children: [
                     const Text('パスワードを忘れた方は'),
                     TextButton(
-                      onPressed: state.isLoading
+                      onPressed: isLoading
                           ? null
                           : () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
