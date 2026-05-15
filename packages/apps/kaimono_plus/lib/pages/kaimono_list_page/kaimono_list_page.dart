@@ -12,9 +12,8 @@ class KaimonoListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch<KaimonoListPageViewModel>(
-      kaimonoListPageViewModelProvider,
-    );
+    final listState = ref.watch(kaimonoListPageViewModelProvider);
+    final notifier = ref.read(kaimonoListPageViewModelProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -23,7 +22,7 @@ class KaimonoListPage extends ConsumerWidget {
         leading: IconButton(
           onPressed: () {
             // アイテムがない場合は何もしない
-            if (vm.items.isEmpty) return;
+            if (listState.items.isEmpty) return;
 
             // 全件削除確認ダイアログを表示
             showDialog<void>(
@@ -35,7 +34,7 @@ class KaimonoListPage extends ConsumerWidget {
                 isDestructive: true,
                 onCancel: () => Navigator.of(dialogContext).pop(),
                 onConfirm: () {
-                  vm.clearAllItems();
+                  notifier.clearAllItems();
                   Navigator.of(dialogContext).pop();
                 },
               ),
@@ -52,7 +51,7 @@ class KaimonoListPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => vm.addItem(),
+        onPressed: notifier.addItem,
         backgroundColor: Colors.amber,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
@@ -62,21 +61,21 @@ class KaimonoListPage extends ConsumerWidget {
         color: Colors.grey[100],
         child: ReorderableListView.builder(
           padding: const EdgeInsets.all(16.0),
-          itemCount: vm.items.length,
+          itemCount: listState.items.length,
           itemBuilder: (context, index) {
-            final item = vm.items[index];
-            final isEditing = vm.editingItemId == item.id;
-            final controller = vm.getControllerForItem(item.id);
+            final item = listState.items[index];
+            final isEditing = listState.editingItemId == item.id;
+            final controller = notifier.getControllerForItem(item.id);
 
             return KaimonoListItem(
               key: ValueKey(item.id),
               item: item,
               isEditing: isEditing,
               controller: controller!,
-              viewModel: vm,
+              notifier: notifier,
             );
           },
-          onReorder: vm.reorderItems,
+          onReorder: notifier.reorderItems,
         ),
       ),
     );

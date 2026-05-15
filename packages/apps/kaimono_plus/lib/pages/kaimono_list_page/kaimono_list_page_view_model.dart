@@ -1,41 +1,86 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+const Object _editingItemIdUnset = Object();
+
+@immutable
 class KaimonoItem {
-  final String id;
-  final String text;
-  bool isCompleted;
-
-  KaimonoItem({
+  const KaimonoItem({
     required this.id,
     required this.text,
     this.isCompleted = false,
   });
+
+  final String id;
+  final String text;
+  final bool isCompleted;
+
+  KaimonoItem copyWith({
+    String? id,
+    String? text,
+    bool? isCompleted,
+  }) {
+    return KaimonoItem(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+}
+
+@immutable
+class KaimonoListState {
+  const KaimonoListState({
+    required this.items,
+    this.editingItemId,
+  });
+
+  final List<KaimonoItem> items;
+  final String? editingItemId;
+
+  KaimonoListState copyWith({
+    List<KaimonoItem>? items,
+    Object? editingItemId = _editingItemIdUnset,
+  }) {
+    return KaimonoListState(
+      items: items ?? this.items,
+      editingItemId: identical(editingItemId, _editingItemIdUnset)
+          ? this.editingItemId
+          : editingItemId as String?,
+    );
+  }
 }
 
 final kaimonoListPageViewModelProvider =
-    ChangeNotifierProvider.autoDispose<KaimonoListPageViewModel>(
-      (ref) => KaimonoListPageViewModel(),
+    NotifierProvider.autoDispose<KaimonoListPageNotifier, KaimonoListState>(
+      KaimonoListPageNotifier.new,
     );
 
-class KaimonoListPageViewModel extends ChangeNotifier {
-  final List<KaimonoItem> _items = [];
+class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
   final ScrollController _scrollController = ScrollController();
-  String? _editingItemId;
   final Map<String, TextEditingController> _itemControllers = {};
 
   ScrollController get scrollController => _scrollController;
-  List<KaimonoItem> get items => List.unmodifiable(_items);
-  String? get editingItemId => _editingItemId;
+
+  @override
+  KaimonoListState build() {
+    ref.onDispose(() {
+      for (final controller in _itemControllers.values) {
+        controller.dispose();
+      }
+      _itemControllers.clear();
+      _scrollController.dispose();
+    });
+    return const KaimonoListState(items: []);
+  }
 
   TextEditingController? getControllerForItem(String id) {
     if (!_itemControllers.containsKey(id)) {
-      final item = _items.firstWhere((item) => item.id == id);
+      final item = state.items.firstWhere((el) => el.id == id);
       _itemControllers[id] = TextEditingController(text: item.text);
     } else {
-      // コントローラーが既に存在する場合も、アイテムのテキストと同期する
-      final item = _items.firstWhere((item) => item.id == id);
+      final item = state.items.firstWhere((el) => el.id == id);
       final controller = _itemControllers[id]!;
       if (controller.text != item.text) {
         controller.text = item.text;
@@ -45,15 +90,11 @@ class KaimonoListPageViewModel extends ChangeNotifier {
   }
 
   void startEditing(String id, {bool isNewItem = false}) {
-    // 現在編集中のアイテムがあれば、先に編集を終了する
-    // 新しいアイテムを追加する時は前の空のアイテムを削除しない
-    // 既存のアイテムを編集する時も前の空のアイテムは削除しない（連続して入力できるように）
-    if (_editingItemId != null && _editingItemId != id) {
-      stopEditing(_editingItemId!, skipIfEmpty: true);
+    final currentEditing = state.editingItemId;
+    if (currentEditing != null && currentEditing != id) {
+      stopEditing(currentEditing, skipIfEmpty: true);
     }
-    _editingItemId = id;
-    notifyListeners();
-    // 少し遅延してからフォーカスを当てる
+    state = state.copyWith(editingItemId: id);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller = _itemControllers[id];
       if (controller != null) {
@@ -65,9 +106,8 @@ class KaimonoListPageViewModel extends ChangeNotifier {
   }
 
   void stopEditing(String id, {bool skipIfEmpty = false}) {
-    _editingItemId = null;
+    state = state.copyWith(editingItemId: null);
     _saveItemText(id, skipIfEmpty: skipIfEmpty);
-    notifyListeners();
   }
 
   void _saveItemText(String id, {bool skipIfEmpty = false}) {
@@ -77,7 +117,6 @@ class KaimonoListPageViewModel extends ChangeNotifier {
       if (text.isNotEmpty) {
         updateItemText(id, controller.text);
       } else if (!skipIfEmpty) {
-        // 空の場合は削除する（新規追加時はskipIfEmpty=trueで呼ばれる）
         removeItem(id);
       }
     }
@@ -90,24 +129,24 @@ class KaimonoListPageViewModel extends ChangeNotifier {
       return;
     }
 
-    final index = _items.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      _items[index] = KaimonoItem(
-        id: _items[index].id,
-        text: trimmedText,
-        isCompleted: _items[index].isCompleted,
-      );
-      notifyListeners();
-    }
+    final index = state.items.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+
+    final nextItems = [...state.items];
+    nextItems[index] = nextItems[index].copyWith(text: trimmedText);
+    state = state.copyWith(items: nextItems);
   }
 
   void addItem() {
     final newId = clock.now().millisecondsSinceEpoch.toString();
-    _items.add(KaimonoItem(id: newId, text: ''));
+    state = state.copyWith(
+      items: [
+        ...state.items,
+        KaimonoItem(id: newId, text: ''),
+      ],
+    );
     debugPrint('addItem: 新しいアイテムを追加します');
-    notifyListeners();
 
-    // リストの最後にスクロールして編集モードにする
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -121,30 +160,32 @@ class KaimonoListPageViewModel extends ChangeNotifier {
   }
 
   void toggleItem(String id) {
-    final index = _items.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      _items[index].isCompleted = !_items[index].isCompleted;
-      notifyListeners();
-    }
+    final index = state.items.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+
+    final nextItems = [...state.items];
+    final item = nextItems[index];
+    nextItems[index] = item.copyWith(isCompleted: !item.isCompleted);
+    state = state.copyWith(items: nextItems);
   }
 
   void removeItem(String id) {
-    _items.removeWhere((item) => item.id == id);
+    final nextItems = state.items.where((item) => item.id != id).toList();
     _itemControllers[id]?.dispose();
     _itemControllers.remove(id);
-    if (_editingItemId == id) {
-      _editingItemId = null;
-    }
-    notifyListeners();
+
+    final nextEditing = state.editingItemId == id ? null : state.editingItemId;
+    state = state.copyWith(items: nextItems, editingItemId: nextEditing);
   }
 
   void reorderItems(int oldIndex, int newIndex) {
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
-    final item = _items.removeAt(oldIndex);
-    _items.insert(newIndex, item);
-    notifyListeners();
+    final nextItems = [...state.items];
+    final item = nextItems.removeAt(oldIndex);
+    nextItems.insert(newIndex, item);
+    state = state.copyWith(items: nextItems);
   }
 
   void clearAllItems() {
@@ -152,18 +193,6 @@ class KaimonoListPageViewModel extends ChangeNotifier {
       controller.dispose();
     }
     _itemControllers.clear();
-    _items.clear();
-    _editingItemId = null;
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    for (final controller in _itemControllers.values) {
-      controller.dispose();
-    }
-    _itemControllers.clear();
-    _scrollController.dispose();
-    super.dispose();
+    state = const KaimonoListState(items: []);
   }
 }
