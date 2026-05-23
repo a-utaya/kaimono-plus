@@ -1,46 +1,51 @@
 import 'package:auth/auth.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../providers/authenticator_provider.dart';
 
 part 'sign_in_page_view_model.g.dart';
 
+/// サインイン画面の状態
+@immutable
+class SignInState extends Equatable {
+  const SignInState({this.isLoading = false});
+
+  final bool isLoading;
+
+  @override
+  List<Object?> get props => [isLoading];
+
+  SignInState copyWith({bool? isLoading}) =>
+      SignInState(isLoading: isLoading ?? this.isLoading);
+}
+
 @riverpod
 class SignInPageViewModel extends _$SignInPageViewModel {
   @override
-  Future<void> build() async {}
+  SignInState build() => const SignInState();
 
-  /// サインインを実行する
-  /// 成功時は [AsyncData]、失敗時は [SignInException] を含む [AsyncError]
-  Future<void> signIn({
+  /// サインインを実行する。
+  /// 成功時は null、失敗時は表示用のエラーメッセージを返す。
+  Future<String?> signIn({
     required String email,
     required String password,
   }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      try {
-        await ref.read(authenticatorProvider).signInWithEmailAndPassword(
-              email: email,
-              password: password,
-            );
-      } on AuthException catch (e) {
-        throw SignInException(e.message);
-      }
-    });
+    state = state.copyWith(isLoading: true);
+
+    try {
+      await ref
+          .read(authenticatorProvider)
+          .signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
   }
-
-  /// エラー表示後などにアイドル状態へ戻す
-  void reset() {
-    state = const AsyncData(null);
-  }
-}
-
-/// サインイン失敗時に [AsyncError] へ載せる例外（表示用メッセージを保持）
-class SignInException implements Exception {
-  const SignInException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => message;
 }

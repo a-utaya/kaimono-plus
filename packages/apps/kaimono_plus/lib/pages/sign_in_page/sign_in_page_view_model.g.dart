@@ -13,7 +13,7 @@ part of 'sign_in_page_view_model.dart';
 final signInPageViewModelProvider = SignInPageViewModelProvider._();
 
 final class SignInPageViewModelProvider
-    extends $AsyncNotifierProvider<SignInPageViewModel, void> {
+    extends $NotifierProvider<SignInPageViewModel, SignInState> {
   SignInPageViewModelProvider._()
     : super(
         from: null,
@@ -31,22 +31,30 @@ final class SignInPageViewModelProvider
   @$internal
   @override
   SignInPageViewModel create() => SignInPageViewModel();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SignInState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SignInState>(value),
+    );
+  }
 }
 
 String _$signInPageViewModelHash() =>
     r'7a7f09a15e283dcefaaea8fc7b602ca344f28804';
 
-abstract class _$SignInPageViewModel extends $AsyncNotifier<void> {
-  FutureOr<void> build();
+abstract class _$SignInPageViewModel extends $Notifier<SignInState> {
+  SignInState build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<void>, void>;
+    final ref = this.ref as $Ref<SignInState, SignInState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<void>, void>,
-              AsyncValue<void>,
+              AnyNotifier<SignInState, SignInState>,
+              SignInState,
               Object?,
               Object?
             >;

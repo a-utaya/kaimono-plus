@@ -6,7 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../ui/app_snack_bar.dart';
 import '../kaimono_list_page/kaimono_list_page.dart';
-import '../password_reset_page/password_reset_page.dart';
+import '../password_reset_page/password_reset_request_page.dart';
 import '../sign_up_page/sign_up_page.dart';
 import 'sign_in_page_view_model.dart';
 
@@ -15,41 +15,32 @@ class SignInPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final signInAsync = ref.watch(signInPageViewModelProvider);
-    final isLoading = signInAsync.isLoading;
+    final state = ref.watch(signInPageViewModelProvider);
+    final isLoading = state.isLoading;
 
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final obscurePassword = useState(true);
     final inputDecoration = AppInputDecoration.authOutlined;
 
-    ref.listen(signInPageViewModelProvider, (previous, next) {
+    Future<void> handleSignIn() async {
+      final message = await ref
+          .read(signInPageViewModelProvider.notifier)
+          .signIn(
+            email: emailController.text,
+            password: passwordController.text,
+          );
       if (!context.mounted) return;
 
-      if (next.hasError) {
-        final error = next.error;
-        final message = error is SignInException
-            ? error.message
-            : 'サインインに失敗しました';
-        showAppSnackBar(context, message, isError: true);
-        ref.read(signInPageViewModelProvider.notifier).reset();
-        return;
-      }
-
-      if (previous?.isLoading == true && next.hasValue) {
+      if (message == null) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (context) => const KaimonoListPage(),
           ),
         );
+      } else {
+        showAppSnackBar(context, message, isError: true);
       }
-    });
-
-    Future<void> handleSignIn() {
-      return ref.read(signInPageViewModelProvider.notifier).signIn(
-            email: emailController.text,
-            password: passwordController.text,
-          );
     }
 
     return Scaffold(
