@@ -1,3 +1,4 @@
+import 'package:auth/auth.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -24,22 +25,22 @@ class SignInPage extends HookConsumerWidget {
     final inputDecoration = AppInputDecoration.authOutlined;
 
     Future<void> handleSignIn() async {
-      final message = await ref
-          .read(signInPageViewModelProvider.notifier)
-          .signIn(
-            email: emailController.text,
-            password: passwordController.text,
-          );
-      if (!context.mounted) return;
-
-      if (message == null) {
+      try {
+        await ref
+            .read(signInPageViewModelProvider.notifier)
+            .signIn(
+              email: emailController.text,
+              password: passwordController.text,
+            );
+        if (!context.mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (context) => const KaimonoListPage(),
           ),
         );
-      } else {
-        showAppSnackBar(context, message, isError: true);
+      } on AuthException catch (e) {
+        if (!context.mounted) return;
+        showAppSnackBar(context, e.message, isError: true);
       }
     }
 

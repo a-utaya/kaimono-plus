@@ -1,4 +1,3 @@
-import 'package:auth/auth.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -27,8 +26,7 @@ class SignInPageViewModel extends _$SignInPageViewModel {
   SignInState build() => const SignInState();
 
   /// サインインを実行する。
-  /// 成功時は null、失敗時は表示用のエラーメッセージを返す。
-  Future<String?> signIn({
+  Future<void> signIn({
     required String email,
     required String password,
   }) async {
@@ -41,9 +39,6 @@ class SignInPageViewModel extends _$SignInPageViewModel {
             email: email,
             password: password,
           );
-      return null;
-    } on AuthException catch (e) {
-      return e.message;
     } finally {
       state = state.copyWith(isLoading: false);
     }
