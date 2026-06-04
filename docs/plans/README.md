@@ -43,3 +43,9 @@
 - [アーキテクチャ](../architecture.md)
 - [ナビゲーション](../navigation.md)
 - [AGENTS.md](../../AGENTS.md)（コーディング・テスト・PR の指針）
+
+## 計画一覧
+
+- [パスワードリセット](password-reset.md)
+- [買い物リスト共有](share-list.md)
+- [ホームナビゲーション・ログアウト](home-navigation-and-logout.md)

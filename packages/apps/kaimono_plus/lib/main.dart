@@ -1,12 +1,10 @@
 import 'package:design_system/design_system.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
-import 'pages/kaimono_list_page/kaimono_list_page.dart';
+import 'pages/home_shell_page/home_shell_page.dart';
 import 'pages/sign_in_page/sign_in_page.dart';
 import 'providers/authenticator_provider.dart';
 
@@ -15,10 +13,6 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // 開発中: Keychain に残ったログイン状態を毎回クリアする（不要になったら削除）
-  if (kDebugMode) {
-    await FirebaseAuth.instance.signOut();
-  }
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -48,8 +42,7 @@ class _AuthGate extends ConsumerWidget {
     final authState = ref.watch(authStateChangesProvider);
 
     return authState.when(
-      data: (user) =>
-          user == null ? const SignInPage() : const KaimonoListPage(),
+      data: (user) => user == null ? const SignInPage() : const HomeShellPage(),
       error: (_, _) => const SignInPage(),
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),

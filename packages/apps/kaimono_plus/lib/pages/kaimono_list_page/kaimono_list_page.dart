@@ -13,7 +13,12 @@ import 'kaimono_list_page_view_model.dart';
 part 'components/kaimono_list_item.part.dart';
 
 class KaimonoListPage extends ConsumerStatefulWidget {
-  const KaimonoListPage({super.key});
+  const KaimonoListPage({
+    super.key,
+    this.showFloatingActionButton = true,
+  });
+
+  final bool showFloatingActionButton;
 
   @override
   ConsumerState<KaimonoListPage> createState() => _KaimonoListPageState();
@@ -79,6 +84,7 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
   Widget build(BuildContext context) {
     final listState = ref.watch(kaimonoListPageViewModelProvider);
     final notifier = ref.watch(kaimonoListPageViewModelProvider.notifier);
+    final listBottomPadding = widget.showFloatingActionButton ? 16.0 : 112.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -138,17 +144,19 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: notifier.addItem,
-        backgroundColor: Colors.amber,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: widget.showFloatingActionButton
+          ? FloatingActionButton(
+              onPressed: notifier.addItem,
+              backgroundColor: Colors.amber,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       body: Container(
         height: double.infinity,
         color: Colors.grey[100],
         child: ReorderableListView.builder(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, listBottomPadding),
           itemCount: listState.items.length,
           itemBuilder: (context, index) {
             final item = listState.items[index];
