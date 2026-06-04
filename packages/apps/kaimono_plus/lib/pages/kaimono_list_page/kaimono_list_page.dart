@@ -1,17 +1,82 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../components/confirm_dialog.dart';
+import '../../ui/app_snack_bar.dart';
 import 'kaimono_list_page_view_model.dart';
 
 part 'components/kaimono_list_item.part.dart';
 
-class KaimonoListPage extends ConsumerWidget {
+class KaimonoListPage extends ConsumerStatefulWidget {
   const KaimonoListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<KaimonoListPage> createState() => _KaimonoListPageState();
+}
+
+class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _handleInitialLink();
+    _linkSubscription = _appLinks.uriLinkStream.listen(_handleLink);
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleInitialLink() async {
+    final uri = await _appLinks.getInitialLink();
+    if (uri != null) {
+      await _handleLink(uri);
+    }
+  }
+
+  Future<void> _handleLink(Uri uri) async {
+    final id = _sharedListIdFromUri(uri);
+    if (id == null) return;
+    try {
+      await ref
+          .read(kaimonoListPageViewModelProvider.notifier)
+          .openSharedList(id);
+      if (!mounted) return;
+      showAppSnackBar(context, '共有リストを開きました');
+    } catch (_) {
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        '共有リストを開けませんでした。リンクを確認してください。',
+        isError: true,
+      );
+    }
+  }
+
+  String? _sharedListIdFromUri(Uri uri) {
+    if (uri.scheme == 'kaimono-plus' && uri.host == 'share') {
+      return uri.pathSegments.isEmpty ? null : uri.pathSegments.first;
+    }
+    if (uri.scheme == 'https' &&
+        uri.host == 'kaimono-plus.web.app' &&
+        uri.pathSegments.length >= 2 &&
+        uri.pathSegments.first == 'share') {
+      return uri.pathSegments[1];
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final listState = ref.watch(kaimonoListPageViewModelProvider);
     final notifier = ref.watch(kaimonoListPageViewModelProvider.notifier);
 
@@ -44,8 +109,31 @@ class KaimonoListPage extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            // FIXME: シェアボタンの実装
-            onPressed: () {},
+            onPressed: listState.hasShareableItems
+                ? () async {
+                    try {
+                      final sharedList = await notifier.createSharedList();
+                      if (!context.mounted) return;
+                      final box = context.findRenderObject() as RenderBox?;
+                      await SharePlus.instance.share(
+                        ShareParams(
+                          text: sharedList.shareText,
+                          subject: '買い物リスト',
+                          sharePositionOrigin: box == null
+                              ? null
+                              : box.localToGlobal(Offset.zero) & box.size,
+                        ),
+                      );
+                    } catch (_) {
+                      if (!context.mounted) return;
+                      showAppSnackBar(
+                        context,
+                        '共有リンクの作成に失敗しました。しばらく経ってから再度お試しください。',
+                        isError: true,
+                      );
+                    }
+                  }
+                : null,
             icon: const Icon(Icons.ios_share, color: Colors.white),
           ),
         ],

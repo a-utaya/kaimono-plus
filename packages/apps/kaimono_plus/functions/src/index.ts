@@ -2,7 +2,7 @@ import { createHash, randomInt } from 'node:crypto';
 
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 initializeApp();
@@ -11,8 +11,12 @@ const db = getFirestore();
 const auth = getAuth();
 
 const COLLECTION = 'passwordResetCodes';
+const SHARED_LISTS_COLLECTION = 'sharedLists';
+const SHARE_BASE_URL = 'https://kaimono-plus.web.app/share';
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
+const MAX_SHARED_ITEMS = 100;
+const MAX_SHARED_ITEM_LENGTH = 120;
 
 function normalizeEmail(email: unknown): string {
   if (typeof email !== 'string') {
@@ -71,6 +75,74 @@ function validateNewPassword(password: unknown): string {
     );
   }
   return password;
+}
+
+function normalizeSharedItems(items: unknown): Array<{ text: string }> {
+  if (!Array.isArray(items)) {
+    throw new HttpsError(
+      'invalid-argument',
+      '共有するアイテムがありません',
+      { authCode: 'invalid-shared-list' },
+    );
+  }
+
+  const normalized = items
+    .map((item) => {
+      if (typeof item !== 'object' || item === null || !('text' in item)) {
+        return null;
+      }
+      const text = (item as { text?: unknown }).text;
+      if (typeof text !== 'string') {
+        return null;
+      }
+      const trimmed = text.trim();
+      if (trimmed.length === 0) {
+        return null;
+      }
+      return { text: trimmed.slice(0, MAX_SHARED_ITEM_LENGTH) };
+    })
+    .filter((item): item is { text: string } => item !== null);
+
+  if (normalized.length === 0) {
+    throw new HttpsError(
+      'invalid-argument',
+      '共有するアイテムがありません',
+      { authCode: 'invalid-shared-list' },
+    );
+  }
+
+  return normalized.slice(0, MAX_SHARED_ITEMS);
+}
+
+function normalizeSharedListId(id: unknown): string {
+  if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{8,}$/.test(id)) {
+    throw new HttpsError(
+      'invalid-argument',
+      '共有リストが見つかりません',
+      { authCode: 'invalid-shared-list-id' },
+    );
+  }
+  return id;
+}
+
+async function findSharedList(id: string): Promise<Array<{ text: string }> | null> {
+  const snap = await db.collection(SHARED_LISTS_COLLECTION).doc(id).get();
+  if (!snap.exists) {
+    return null;
+  }
+
+  const data = snap.data()!;
+  return Array.isArray(data.items)
+    ? data.items
+        .map((item) => {
+          if (typeof item !== 'object' || item === null || !('text' in item)) {
+            return null;
+          }
+          const text = (item as { text?: unknown }).text;
+          return typeof text === 'string' ? { text } : null;
+        })
+        .filter((item): item is { text: string } => item !== null)
+    : [];
 }
 
 export const sendPasswordResetCode = onCall({ invoker: 'public' }, async (request) => {
@@ -162,4 +234,54 @@ export const confirmPasswordResetWithCode = onCall({ invoker: 'public' }, async 
   await docRef.delete();
 
   return { success: true };
+});
+
+export const createSharedList = onCall({ invoker: 'public' }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      'unauthenticated',
+      'ログインが必要です',
+      { authCode: 'unauthenticated' },
+    );
+  }
+
+  const items = normalizeSharedItems(request.data?.items);
+  const docRef = db.collection(SHARED_LISTS_COLLECTION).doc();
+  await docRef.set({
+    items,
+    createdBy: request.auth.uid,
+    createdAt: FieldValue.serverTimestamp(),
+    version: 1,
+  });
+
+  return {
+    id: docRef.id,
+    url: `${SHARE_BASE_URL}/${docRef.id}`,
+  };
+});
+
+export const getSharedListForApp = onCall({ invoker: 'public' }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      'unauthenticated',
+      'ログインが必要です',
+      { authCode: 'unauthenticated' },
+    );
+  }
+
+  const id = normalizeSharedListId(request.data?.id);
+  const items = await findSharedList(id);
+  if (items === null) {
+    throw new HttpsError(
+      'not-found',
+      '共有リストが見つかりません',
+      { authCode: 'shared-list-not-found' },
+    );
+  }
+
+  return {
+    id,
+    title: '買い物リスト',
+    items,
+  };
 });

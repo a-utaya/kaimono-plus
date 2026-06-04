@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kaimono+ で開く</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+        color: #2d2a24;
+        background: #f8f6f0;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        box-sizing: border-box;
+        width: min(100%, 560px);
+        margin: 0 auto;
+        padding: 56px 20px;
+      }
+
+      .brand {
+        color: #946600;
+        font-size: 14px;
+        font-weight: 700;
+        margin: 0 0 10px;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.25;
+        margin: 0 0 14px;
+      }
+
+      p {
+        color: #665f53;
+        font-size: 16px;
+        line-height: 1.7;
+        margin: 0;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      a {
+        align-items: center;
+        background: #f4b400;
+        border-radius: 8px;
+        color: #2d2508;
+        display: inline-flex;
+        font-weight: 700;
+        min-height: 44px;
+        padding: 0 16px;
+        text-decoration: none;
+      }
+
+      a.secondary {
+        background: #fff;
+        border: 1px solid #d8ceb9;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="brand">Kaimono+</p>
+      <h1>共有リストをアプリで開く</h1>
+      <p>
+        共有された買い物リストは、メッセージ本文にも記載されています。
+        Kaimono+ をインストールしている場合はアプリで開けます。
+      </p>
+      <div class="actions">
+        <a id="openApp" href="#">アプリで開く</a>
+        <a class="secondary" href="/">Kaimono+ を見る</a>
+      </div>
+    </main>
+    <script>
+      const id = location.pathname.split("/").filter(Boolean).pop();
+      const openApp = document.querySelector("#openApp");
+      openApp.href = `kaimono-plus://share/${encodeURIComponent(id ?? "")}`;
+    </script>
+  </body>
+</html>
