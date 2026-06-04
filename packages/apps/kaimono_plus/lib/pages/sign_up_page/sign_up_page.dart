@@ -32,8 +32,6 @@ class _SignUpPageContent extends HookConsumerWidget {
     useListenable(passwordController);
     useListenable(passwordConfirmController);
 
-    final inputDecoration = AppInputDecoration.authOutlined;
-
     /// 登録ボタン押下時の処理。成功時はモーダルを閉じて SnackBar で完了を表示する。
     Future<void> handleSignUp() async {
       final message = await notifier.signUp(
@@ -76,7 +74,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const Gap(48),
                 TextField(
                   controller: emailController,
-                  decoration: inputDecoration.copyWith(labelText: 'メールアドレス'),
+                  decoration: AppInputDecoration.emailDecoration(),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   enabled: !state.isLoading,
@@ -84,7 +82,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const Gap(16),
                 TextField(
                   controller: passwordController,
-                  decoration: inputDecoration.copyWith(
+                  decoration: AppInputDecoration.passwordDecoration(
                     labelText: 'パスワード（半角英数字6文字以上）',
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -104,7 +102,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const SizedBox(height: 16),
                 TextField(
                   controller: passwordConfirmController,
-                  decoration: inputDecoration.copyWith(
+                  decoration: AppInputDecoration.passwordDecoration(
                     labelText: 'パスワード確認',
                     suffixIcon: IconButton(
                       icon: Icon(

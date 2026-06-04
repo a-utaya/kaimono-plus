@@ -22,7 +22,6 @@ class SignInPage extends HookConsumerWidget {
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final obscurePassword = useState(true);
-    final inputDecoration = AppInputDecoration.authOutlined;
 
     Future<void> handleSignIn() async {
       try {
@@ -71,7 +70,7 @@ class SignInPage extends HookConsumerWidget {
                 const Gap(48),
                 TextField(
                   controller: emailController,
-                  decoration: inputDecoration.copyWith(labelText: 'メールアドレス'),
+                  decoration: AppInputDecoration.emailDecoration(),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   enabled: !isLoading,
@@ -79,8 +78,7 @@ class SignInPage extends HookConsumerWidget {
                 const Gap(16),
                 TextField(
                   controller: passwordController,
-                  decoration: inputDecoration.copyWith(
-                    labelText: 'パスワード',
+                  decoration: AppInputDecoration.passwordDecoration(
                     suffixIcon: IconButton(
                       icon: Icon(
                         obscurePassword.value
