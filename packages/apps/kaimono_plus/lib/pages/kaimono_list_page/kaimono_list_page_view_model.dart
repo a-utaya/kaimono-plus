@@ -1,8 +1,22 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const Object _editingItemIdUnset = Object();
+
+@immutable
+class SharedKaimonoList {
+  const SharedKaimonoList({
+    required this.id,
+    required this.url,
+    required this.shareText,
+  });
+
+  final String id;
+  final String url;
+  final String shareText;
+}
 
 @immutable
 class KaimonoItem {
@@ -39,6 +53,20 @@ class KaimonoListState {
   final List<KaimonoItem> items;
   final String? editingItemId;
 
+  List<KaimonoItem> get shareableItems => items
+      .where((item) => item.text.trim().isNotEmpty && !item.isCompleted)
+      .toList();
+
+  bool get hasShareableItems => shareableItems.isNotEmpty;
+
+  String get shareText {
+    final lines = <String>['買うもの', ''];
+    for (final item in shareableItems) {
+      lines.add('・${item.text.trim()}');
+    }
+    return lines.join('\n');
+  }
+
   KaimonoListState copyWith({
     List<KaimonoItem>? items,
     Object? editingItemId = _editingItemIdUnset,
@@ -60,6 +88,7 @@ final kaimonoListPageViewModelProvider =
 class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
   final ScrollController _scrollController = ScrollController();
   final Map<String, TextEditingController> _itemControllers = {};
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   ScrollController get scrollController => _scrollController;
 
@@ -194,5 +223,69 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
     }
     _itemControllers.clear();
     state = const KaimonoListState(items: []);
+  }
+
+  Future<SharedKaimonoList> createSharedList() async {
+    final items = state.shareableItems;
+    if (items.isEmpty) {
+      throw StateError('共有できるアイテムがありません');
+    }
+
+    final result = await _functions
+        .httpsCallable('createSharedList')
+        .call<Map<Object?, Object?>>({
+          'items': [
+            for (final item in items)
+              {
+                'text': item.text.trim(),
+              },
+          ],
+        });
+    final data = result.data;
+    final id = data['id'];
+    final url = data['url'];
+    if (id is! String || id.isEmpty || url is! String || url.isEmpty) {
+      throw StateError('共有リンクの作成に失敗しました');
+    }
+
+    return SharedKaimonoList(
+      id: id,
+      url: url,
+      shareText: '${state.shareText}\n\nKaimono+で開く:\n$url',
+    );
+  }
+
+  Future<void> openSharedList(String id) async {
+    final result = await _functions
+        .httpsCallable('getSharedListForApp')
+        .call<Map<Object?, Object?>>({'id': id});
+    final data = result.data;
+    final rawItems = data['items'];
+    if (rawItems is! List) {
+      throw StateError('共有リストを開けませんでした');
+    }
+
+    final nextItems = <KaimonoItem>[];
+    for (final (index, rawItem) in rawItems.indexed) {
+      if (rawItem is! Map) continue;
+      final text = rawItem['text'];
+      if (text is! String || text.trim().isEmpty) continue;
+      nextItems.add(
+        KaimonoItem(
+          id: '${clock.now().microsecondsSinceEpoch}-$index',
+          text: text.trim(),
+        ),
+      );
+    }
+
+    if (nextItems.isEmpty) {
+      throw StateError('共有リストを開けませんでした');
+    }
+
+    for (final controller in _itemControllers.values) {
+      controller.dispose();
+    }
+    _itemControllers.clear();
+    state = KaimonoListState(items: nextItems);
   }
 }
