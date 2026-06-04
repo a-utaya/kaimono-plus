@@ -5,3 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final authenticatorProvider = Provider<Authenticator>(
   (ref) => FirebaseAuthenticator(),
 );
+
+/// 認証状態の変更をアプリ全体で購読する [StreamProvider]。
+final authStateChangesProvider = StreamProvider<AuthUser?>(
+  (ref) => ref.watch(authenticatorProvider).authStateChanges,
+);
