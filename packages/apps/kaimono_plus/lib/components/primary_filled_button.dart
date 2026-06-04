@@ -2,18 +2,20 @@ import 'package:flutter/material.dart';
 
 class PrimaryFilledButton extends StatelessWidget {
   const PrimaryFilledButton({
-    required this.onPressed,
     required this.label,
+    this.onPressed,
+    this.isLoading = false,
     super.key,
   });
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
   final String label;
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: onPressed,
+      onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
         elevation: 0,
         backgroundColor: Colors.amber,
@@ -23,7 +25,23 @@ class PrimaryFilledButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
-      child: Text(label),
+      child: isLoading
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
     );
   }
 }

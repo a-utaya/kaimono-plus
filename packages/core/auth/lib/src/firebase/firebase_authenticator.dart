@@ -1,20 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../authenticator.dart';
 import '../exceptions/auth_exception.dart';
 import '../models/auth_user.dart';
 
-/// Firebase Auth / Firestore を用いた [Authenticator] 実装
+/// Firebase Auth / Firestore / Cloud Functions を用いた [Authenticator] 実装
 class FirebaseAuthenticator implements Authenticator {
   FirebaseAuthenticator({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
-  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+    FirebaseFunctions? functions,
+  }) : _auth = firebaseAuth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions;
 
   static const _maxRetries = 3;
   static const _retryDelay = Duration(milliseconds: 800);
@@ -74,6 +78,42 @@ class FirebaseAuthenticator implements Authenticator {
   @override
   Future<void> signOut() => _auth.signOut();
 
+  @override
+  Future<void> sendPasswordResetCode({required String email}) async {
+    try {
+      await _functions.httpsCallable('sendPasswordResetCode').call<void>({
+        'email': email.trim(),
+      });
+    } on FirebaseFunctionsException catch (e) {
+      throw AuthException(
+        _passwordResetFunctionsMessage(e),
+        code: _passwordResetAuthCode(e),
+      );
+    }
+  }
+
+  @override
+  Future<void> confirmPasswordResetWithCode({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      await _functions.httpsCallable('confirmPasswordResetWithCode').call<void>(
+        {
+          'email': email.trim(),
+          'code': code.trim(),
+          'newPassword': newPassword,
+        },
+      );
+    } on FirebaseFunctionsException catch (e) {
+      throw AuthException(
+        _passwordResetFunctionsMessage(e),
+        code: _passwordResetAuthCode(e),
+      );
+    }
+  }
+
   AuthUser? _toAuthUser(User? user) {
     if (user == null) return null;
     return AuthUser(uid: user.uid, email: user.email);
@@ -101,6 +141,36 @@ class FirebaseAuthenticator implements Authenticator {
     }
     if (lastError != null) {
       throw AuthException(_firestoreErrorMessage(lastError));
+    }
+  }
+
+  String? _passwordResetAuthCode(FirebaseFunctionsException e) {
+    final details = e.details;
+    if (details is Map) {
+      final authCode = details['authCode'];
+      if (authCode is String && authCode.isNotEmpty) {
+        return authCode;
+      }
+    }
+    return e.code;
+  }
+
+  String _passwordResetFunctionsMessage(FirebaseFunctionsException e) {
+    if (e.code == 'permission-denied') {
+      return 'パスワード再設定用の Cloud Functions を呼び出せません。Cloud Run の呼び出し権限を確認してください。';
+    }
+    if (e.message != null && e.message!.isNotEmpty) {
+      return e.message!;
+    }
+    switch (e.code) {
+      case 'invalid-argument':
+        return '入力内容を確認してください';
+      case 'resource-exhausted':
+        return '試行回数の上限に達しました。再度認証コードを送信してください';
+      case 'unavailable':
+        return '通信に失敗しました。しばらく経ってからお試しください';
+      default:
+        return 'パスワードの再設定に失敗しました';
     }
   }
 
