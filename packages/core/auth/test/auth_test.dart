@@ -1,12 +1,11 @@
+import 'package:auth/auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:auth/auth.dart';
-
 void main() {
-  test('adds one to input values', () {
-    final calculator = Calculator();
-    expect(calculator.addOne(2), 3);
-    expect(calculator.addOne(-7), -6);
-    expect(calculator.addOne(0), 1);
+  test('AuthException exposes display message', () {
+    const exception = AuthException('テストメッセージ', code: 'test-code');
+    expect(exception.message, 'テストメッセージ');
+    expect(exception.code, 'test-code');
+    expect(exception.toString(), 'テストメッセージ');
   });
 }

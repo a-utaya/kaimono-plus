@@ -1,7 +1,7 @@
 name: auth
-description: "A new Flutter package project."
+description: Firebase Auth と Cloud Functions を用いた認証実装
 version: 0.0.1
-homepage: "https://github.com/kaimono-plus/kaimono-plus"
+publish_to: "none"
 
 environment:
   sdk: ^3.10.3
@@ -9,6 +9,8 @@ environment:
 resolution: workspace
 
 dependencies:
+  cloud_functions: ^6.0.6
+  firebase_auth: ^6.1.4
   flutter:
     sdk: flutter
 

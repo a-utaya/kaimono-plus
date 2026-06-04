@@ -42,7 +42,7 @@ final class SignInPageViewModelProvider
 }
 
 String _$signInPageViewModelHash() =>
-    r'02feedad2522380ea981d75f72c00e317281458b';
+    r'7a7f09a15e283dcefaaea8fc7b602ca344f28804';
 
 abstract class _$SignInPageViewModel extends $Notifier<SignInState> {
   SignInState build();

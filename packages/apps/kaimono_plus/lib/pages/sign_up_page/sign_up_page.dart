@@ -1,3 +1,4 @@
+import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
@@ -21,10 +22,8 @@ class _SignUpPageContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch<SignUpState>(signUpPageViewModelProvider);
-    final notifier = ref.read<SignUpPageViewModel>(
-      signUpPageViewModelProvider.notifier,
-    );
+    final state = ref.watch(signUpPageViewModelProvider);
+    final notifier = ref.watch(signUpPageViewModelProvider.notifier);
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final passwordConfirmController = useTextEditingController();
@@ -75,7 +74,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const Gap(48),
                 TextField(
                   controller: emailController,
-                  decoration: _inputDecoration().copyWith(labelText: 'メールアドレス'),
+                  decoration: AppInputDecoration.emailDecoration(),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   enabled: !state.isLoading,
@@ -83,9 +82,8 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const Gap(16),
                 TextField(
                   controller: passwordController,
-                  decoration: _inputDecoration().copyWith(
+                  decoration: AppInputDecoration.passwordDecoration(
                     labelText: 'パスワード（半角英数字6文字以上）',
-                    counterText: '${passwordController.text.length}/6',
                     suffixIcon: IconButton(
                       icon: Icon(
                         obscurePassword.value
@@ -104,7 +102,7 @@ class _SignUpPageContent extends HookConsumerWidget {
                 const SizedBox(height: 16),
                 TextField(
                   controller: passwordConfirmController,
-                  decoration: _inputDecoration().copyWith(
+                  decoration: AppInputDecoration.passwordDecoration(
                     labelText: 'パスワード確認',
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -169,23 +167,4 @@ class _SignUpPageContent extends HookConsumerWidget {
       ),
     );
   }
-
-  /// メール・パスワード欄で共通利用する InputDecoration。
-  InputDecoration _inputDecoration() {
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.amber),
-      ),
-    );
-  }
-
-  // SnackBar は共通ヘルパーへ切り出し: showAppSnackBar
 }
