@@ -25,6 +25,9 @@ class ConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minWidth: 312),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),

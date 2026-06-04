@@ -1,7 +1,5 @@
 import 'package:design_system/design_system.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,10 +13,6 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // 開発中: Keychain に残ったログイン状態を毎回クリアする（不要になったら削除）
-  if (kDebugMode) {
-    await FirebaseAuth.instance.signOut();
-  }
   runApp(
     const ProviderScope(
       child: MyApp(),

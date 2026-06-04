@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
+import '../../components/confirm_dialog.dart';
 import '../../providers/authenticator_provider.dart';
 import '../../ui/app_snack_bar.dart';
 import '../kaimono_list_page/kaimono_list_page.dart';
@@ -85,23 +86,56 @@ class ShoppingListHistoryPage extends StatelessWidget {
   }
 }
 
-class MyPage extends ConsumerWidget {
+class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
 
-  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends ConsumerState<MyPage> {
+  bool _isSigningOut = false;
+
+  Future<void> _showSignOutDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => ConfirmDialog(
+        title: 'お店を出ますか？',
+        content: 'ログアウトします。よろしいですか？',
+        confirmText: 'お店を出る',
+        isDestructive: true,
+        onCancel: () => Navigator.of(dialogContext).pop(),
+        onConfirm: () {
+          Navigator.of(dialogContext).pop();
+          _signOut();
+        },
+      ),
+    );
+  }
+
+  Future<void> _signOut() async {
+    setState(() {
+      _isSigningOut = true;
+    });
     try {
       await ref.read(authenticatorProvider).signOut();
     } on AuthException catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       showAppSnackBar(context, e.message, isError: true);
     } catch (_) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       showAppSnackBar(context, 'ログアウトに失敗しました', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSigningOut = false;
+        });
+      }
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final email = ref
         .watch(authStateChangesProvider)
         .when(
@@ -166,9 +200,17 @@ class MyPage extends ConsumerWidget {
                 ),
                 const Gap(24),
                 OutlinedButton.icon(
-                  onPressed: () => _signOut(context, ref),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('ログアウト'),
+                  onPressed: _isSigningOut ? null : _showSignOutDialog,
+                  icon: _isSigningOut
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.storefront_outlined),
+                  label: Text(
+                    _isSigningOut ? 'お店を出ています...' : 'お店を出る（ログアウト）',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.redAccent,
                     side: const BorderSide(color: Colors.redAccent),
@@ -344,7 +386,11 @@ class _CreateListButton extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add_shopping_cart, color: Colors.white, size: 26),
+                  Icon(
+                    Icons.add_shopping_cart,
+                    color: Colors.white,
+                    size: 26,
+                  ),
                   Gap(2),
                   Text(
                     '作成',
