@@ -19,4 +19,14 @@ abstract class Authenticator {
 
   /// サインアウト
   Future<void> signOut();
+
+  /// パスワード再設定用の認証コード（6桁）をメール送信する
+  Future<void> sendPasswordResetCode({required String email});
+
+  /// 認証コードを検証し、新しいパスワードを設定する
+  Future<void> confirmPasswordResetWithCode({
+    required String email,
+    required String code,
+    required String newPassword,
+  });
 }
