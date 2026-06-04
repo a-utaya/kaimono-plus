@@ -6,7 +6,6 @@ import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../ui/app_snack_bar.dart';
-import '../kaimono_list_page/kaimono_list_page.dart';
 import '../password_reset_page/password_reset_request_page.dart';
 import '../sign_up_page/sign_up_page.dart';
 import 'sign_in_page_view_model.dart';
@@ -31,12 +30,6 @@ class SignInPage extends HookConsumerWidget {
               email: emailController.text,
               password: passwordController.text,
             );
-        if (!context.mounted) return;
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(
-            builder: (context) => const KaimonoListPage(),
-          ),
-        );
       } on AuthException catch (e) {
         if (!context.mounted) return;
         showAppSnackBar(context, e.message, isError: true);

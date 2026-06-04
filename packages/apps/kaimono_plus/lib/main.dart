@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
-import 'pages/kaimono_list_page/kaimono_list_page.dart';
+import 'pages/home_shell_page/home_shell_page.dart';
 import 'pages/sign_in_page/sign_in_page.dart';
 import 'providers/authenticator_provider.dart';
 
@@ -48,8 +48,7 @@ class _AuthGate extends ConsumerWidget {
     final authState = ref.watch(authStateChangesProvider);
 
     return authState.when(
-      data: (user) =>
-          user == null ? const SignInPage() : const KaimonoListPage(),
+      data: (user) => user == null ? const SignInPage() : const HomeShellPage(),
       error: (_, _) => const SignInPage(),
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
