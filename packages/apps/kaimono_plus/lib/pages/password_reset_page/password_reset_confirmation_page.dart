@@ -30,7 +30,6 @@ class PasswordResetConfirmationPage extends HookConsumerWidget {
     final passwordConfirmController = useTextEditingController();
     final obscurePassword = useState(true);
     final obscurePasswordConfirm = useState(true);
-    final inputDecoration = AppInputDecoration.authOutlined;
 
     Future<void> registerNewPassword() async {
       final success = await notifier.confirmPasswordReset(
@@ -78,8 +77,7 @@ class PasswordResetConfirmationPage extends HookConsumerWidget {
                 const SizedBox(height: 48),
                 TextField(
                   controller: codeController,
-                  decoration: inputDecoration.copyWith(
-                    labelText: '認証コード（6桁）',
+                  decoration: AppInputDecoration.codeDecoration(
                     errorText: state.codeError,
                   ),
                   keyboardType: TextInputType.number,
@@ -94,7 +92,7 @@ class PasswordResetConfirmationPage extends HookConsumerWidget {
                 const SizedBox(height: 24),
                 TextField(
                   controller: passwordController,
-                  decoration: inputDecoration.copyWith(
+                  decoration: AppInputDecoration.passwordDecoration(
                     labelText: '新しいパスワード',
                     errorText: state.passwordError,
                   ),
@@ -106,7 +104,7 @@ class PasswordResetConfirmationPage extends HookConsumerWidget {
                 const SizedBox(height: 24),
                 TextField(
                   controller: passwordConfirmController,
-                  decoration: inputDecoration.copyWith(
+                  decoration: AppInputDecoration.passwordDecoration(
                     labelText: '新しいパスワード（確認用）',
                     errorText: state.passwordConfirmError,
                   ),

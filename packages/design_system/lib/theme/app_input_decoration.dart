@@ -18,4 +18,26 @@ class AppInputDecoration {
       borderSide: const BorderSide(color: Colors.amber),
     ),
   );
+
+  static InputDecoration emailDecoration({String? errorText}) =>
+      authOutlined.copyWith(
+        labelText: 'メールアドレス',
+        errorText: errorText,
+      );
+
+  static InputDecoration passwordDecoration({
+    String labelText = 'パスワード',
+    String? errorText,
+    Widget? suffixIcon,
+  }) => authOutlined.copyWith(
+    labelText: labelText,
+    errorText: errorText,
+    suffixIcon: suffixIcon,
+  );
+
+  static InputDecoration codeDecoration({String? errorText}) =>
+      authOutlined.copyWith(
+        labelText: '認証コード（6桁）',
+        errorText: errorText,
+      );
 }

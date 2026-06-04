@@ -1,5 +1,5 @@
 name: auth
-description: 認証抽象（Authenticator）と Firebase 実装
+description: Firebase Auth と Cloud Functions を用いた認証実装
 version: 0.0.1
 publish_to: "none"
 
@@ -9,7 +9,6 @@ environment:
 resolution: workspace
 
 dependencies:
-  cloud_firestore: ^6.1.2
   cloud_functions: ^6.0.6
   firebase_auth: ^6.1.4
   flutter:

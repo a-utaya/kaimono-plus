@@ -78,7 +78,7 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
   @override
   Widget build(BuildContext context) {
     final listState = ref.watch(kaimonoListPageViewModelProvider);
-    final notifier = ref.read(kaimonoListPageViewModelProvider.notifier);
+    final notifier = ref.watch(kaimonoListPageViewModelProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(

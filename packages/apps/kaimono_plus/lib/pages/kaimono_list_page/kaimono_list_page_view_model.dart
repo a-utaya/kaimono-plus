@@ -3,6 +3,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// [KaimonoListState.copyWith] で `editingItemId` を変更しない場合と、
+/// 明示的に `null` へ更新する場合を区別するための sentinel。
 const Object _editingItemIdUnset = Object();
 
 @immutable

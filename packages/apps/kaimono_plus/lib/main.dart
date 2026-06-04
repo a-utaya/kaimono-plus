@@ -1,4 +1,3 @@
-import 'package:auth/auth.dart';
 import 'package:design_system/design_system.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -46,21 +45,15 @@ class _AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authenticatorProvider).authStateChanges;
+    final authState = ref.watch(authStateChangesProvider);
 
-    return StreamBuilder<AuthUser?>(
-      stream: authState,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (snapshot.hasData && snapshot.data != null) {
-          return const KaimonoListPage();
-        }
-        return const SignInPage();
-      },
+    return authState.when(
+      data: (user) =>
+          user == null ? const SignInPage() : const KaimonoListPage(),
+      error: (_, _) => const SignInPage(),
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
     );
   }
 }

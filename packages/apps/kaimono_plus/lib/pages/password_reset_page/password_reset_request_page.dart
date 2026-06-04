@@ -21,7 +21,6 @@ class PasswordResetPage extends HookConsumerWidget {
     final isLoading = state.isLoading;
 
     final emailController = useTextEditingController();
-    final inputDecoration = AppInputDecoration.authOutlined;
 
     Future<void> sendPasswordResetCode() async {
       final email = emailController.text.trim();
@@ -70,8 +69,7 @@ class PasswordResetPage extends HookConsumerWidget {
                 const SizedBox(height: 48),
                 TextField(
                   controller: emailController,
-                  decoration: inputDecoration.copyWith(
-                    labelText: 'メールアドレス',
+                  decoration: AppInputDecoration.emailDecoration(
                     errorText: state.emailError,
                   ),
                   keyboardType: TextInputType.emailAddress,
