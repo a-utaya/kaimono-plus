@@ -1,8 +1,8 @@
 import 'package:auth/auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// アプリ全体で共有する [Authenticator]（Firebase 実装）
-final authenticatorProvider = Provider<Authenticator>(
+/// アプリ全体で共有する Firebase 認証実装。
+final authenticatorProvider = Provider<FirebaseAuthenticator>(
   (ref) => FirebaseAuthenticator(),
 );
 
