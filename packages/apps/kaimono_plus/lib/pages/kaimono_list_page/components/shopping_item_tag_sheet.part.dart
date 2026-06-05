@@ -17,26 +17,50 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
     final listState = ref.watch(kaimonoListPageViewModelProvider);
     final notifier = ref.read(kaimonoListPageViewModelProvider.notifier);
     final newTagController = useTextEditingController();
-    final searchController = useTextEditingController();
     final searchQuery = useState('');
     final selectedColor = useState<Color?>(null);
+    final selectedTagIds = useState<List<String>>(const []);
     final isCreating = useState(false);
 
     useEffect(() {
       void listener() {
-        searchQuery.value = searchController.text.trim();
+        searchQuery.value = newTagController.text.trim();
       }
 
-      searchController.addListener(listener);
-      return () => searchController.removeListener(listener);
-    }, [searchController]);
+      newTagController.addListener(listener);
+      return () => newTagController.removeListener(listener);
+    }, [newTagController]);
 
+    final tagById = {
+      for (final tag in listState.shoppingItemTags) tag.id: tag,
+    };
+    final selectedTags = [
+      for (final id in selectedTagIds.value)
+        if (tagById[id] != null) tagById[id]!,
+    ];
+    final selectedTagIdSet = selectedTags.map((tag) => tag.id).toSet();
     final filteredTags = [
       for (final tag in listState.shoppingItemTags)
-        if (searchQuery.value.isEmpty || tag.name.contains(searchQuery.value))
+        if (!selectedTagIdSet.contains(tag.id) &&
+            (searchQuery.value.isEmpty || tag.name.contains(searchQuery.value)))
           tag,
-    ];
+    ]..sort(_compareShoppingItemTags);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    void toggleSelectedTag(ShoppingItemTag tag) {
+      final nextIds = [...selectedTagIds.value];
+      if (!nextIds.remove(tag.id)) {
+        nextIds.add(tag.id);
+      }
+      selectedTagIds.value = nextIds;
+    }
+
+    void addSelectedTags() {
+      if (selectedTags.isEmpty) return;
+      notifier.addItemsFromTags(selectedTags);
+      selectedTagIds.value = const [];
+      Navigator.of(context).pop();
+    }
 
     Future<void> createTag() async {
       if (isCreating.value) return;
@@ -61,7 +85,6 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
         isCreating.value = false;
       }
       newTagController.clear();
-      selectedColor.value = null;
     }
 
     return Padding(
@@ -96,24 +119,6 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
             ),
             const SizedBox(height: 10),
 
-            // タグ検索
-            TextField(
-              controller: searchController,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'タグを検索',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-            const SizedBox(height: 16),
-
             // 新規タグ作成
             Container(
               padding: const EdgeInsets.all(12),
@@ -132,7 +137,7 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => unawaited(createTag()),
                           decoration: const InputDecoration(
-                            hintText: 'タグ名を入力',
+                            hintText: 'タグ名を入力・検索',
                             filled: true,
                             fillColor: Colors.white,
                             prefixIcon: Icon(Icons.sell_outlined),
@@ -203,6 +208,57 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
+            Container(
+              constraints: const BoxConstraints(minHeight: 120),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '選択したもの',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Gap(10),
+                  if (selectedTags.isEmpty)
+                    const SizedBox(
+                      height: 48,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '未選択',
+                          style: TextStyle(
+                            color: Colors.black38,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (final tag in selectedTags)
+                          _SelectedShoppingItemTagChip(
+                            tag: tag,
+                            onRemove: () => toggleSelectedTag(tag),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // 登録済みタグ
             Row(
@@ -227,14 +283,6 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'タグを長押しすると編集できます',
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 12,
-              ),
-            ),
             const SizedBox(height: 10),
             Expanded(
               child: SingleChildScrollView(
@@ -249,12 +297,31 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
                           for (final tag in filteredTags)
                             _ShoppingItemTagChip(
                               tag: tag,
-                              onTap: () => notifier.addItemFromTag(tag),
+                              isSelected: selectedTagIdSet.contains(tag.id),
+                              onTap: () => toggleSelectedTag(tag),
                               onLongPress: () =>
                                   _openShoppingItemTagDetailPage(context, tag),
                             ),
                         ],
                       ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: selectedTags.isEmpty ? null : addSelectedTags,
+              icon: const Icon(Icons.add_shopping_cart_outlined),
+              label: Text(
+                selectedTags.isEmpty ? 'タグを選択' : '${selectedTags.length}件を追加',
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade200,
+                disabledForegroundColor: Colors.black38,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
@@ -264,14 +331,81 @@ class ShoppingItemTagSheet extends HookConsumerWidget {
   }
 }
 
+int _compareShoppingItemTags(ShoppingItemTag a, ShoppingItemTag b) {
+  final colorComparison = _shoppingItemTagColorOrder(
+    a.colorValue,
+  ).compareTo(_shoppingItemTagColorOrder(b.colorValue));
+  if (colorComparison != 0) return colorComparison;
+
+  final categoryComparison = _shoppingItemTagNameCategory(
+    a.name,
+  ).compareTo(_shoppingItemTagNameCategory(b.name));
+  if (categoryComparison != 0) return categoryComparison;
+
+  final nameComparison = _shoppingItemTagSortText(
+    a.name,
+  ).compareTo(_shoppingItemTagSortText(b.name));
+  if (nameComparison != 0) return nameComparison;
+
+  return a.id.compareTo(b.id);
+}
+
+int _shoppingItemTagColorOrder(int? colorValue) {
+  if (colorValue == null) return _shoppingItemTagPaletteColors.length + 1;
+
+  final paletteIndex = _shoppingItemTagPaletteColors.indexWhere(
+    (color) => color.toARGB32() == colorValue,
+  );
+  if (paletteIndex >= 0) return paletteIndex;
+
+  return _shoppingItemTagPaletteColors.length;
+}
+
+int _shoppingItemTagNameCategory(String name) {
+  final text = name.trimLeft();
+  if (text.isEmpty) return 3;
+
+  final firstRune = text.runes.first;
+  if (_isKanaRune(firstRune)) return 0;
+  if (_isKanjiRune(firstRune)) return 1;
+  if (_isAsciiLetterRune(firstRune)) return 2;
+  return 3;
+}
+
+String _shoppingItemTagSortText(String name) {
+  final text = name.trim().toLowerCase();
+  return String.fromCharCodes(text.runes.map(_katakanaToHiraganaRune));
+}
+
+int _katakanaToHiraganaRune(int rune) {
+  if (rune < 0x30A1 || rune > 0x30F6) return rune;
+  return rune - 0x60;
+}
+
+bool _isKanaRune(int rune) {
+  return (rune >= 0x3041 && rune <= 0x3096) ||
+      (rune >= 0x30A1 && rune <= 0x30FA);
+}
+
+bool _isKanjiRune(int rune) {
+  return (rune >= 0x4E00 && rune <= 0x9FFF) ||
+      (rune >= 0x3400 && rune <= 0x4DBF);
+}
+
+bool _isAsciiLetterRune(int rune) {
+  return (rune >= 0x41 && rune <= 0x5A) || (rune >= 0x61 && rune <= 0x7A);
+}
+
 class _ShoppingItemTagChip extends StatelessWidget {
   const _ShoppingItemTagChip({
     required this.tag,
+    required this.isSelected,
     required this.onTap,
     required this.onLongPress,
   });
 
   final ShoppingItemTag tag;
+  final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -279,10 +413,13 @@ class _ShoppingItemTagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorValue = tag.colorValue;
     final color = colorValue == null ? null : Color(colorValue);
-    final borderColor = color ?? Colors.black.withValues(alpha: 0.24);
+    final selectedColor = color ?? Colors.grey.shade600;
+    final borderColor = isSelected
+        ? selectedColor
+        : color ?? Colors.black.withValues(alpha: 0.24);
     final backgroundColor = color == null
         ? Colors.white
-        : color.withValues(alpha: 0.08);
+        : color.withValues(alpha: isSelected ? 0.16 : 0.08);
     final maxTextWidth = MediaQuery.widthOf(context) - 132;
 
     return InkWell(
@@ -297,19 +434,79 @@ class _ShoppingItemTagChip extends StatelessWidget {
             side: BorderSide(color: borderColor),
           ),
         ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxTextWidth),
-          child: Text(
-            tag.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxTextWidth),
+              child: Text(
+                tag.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (isSelected) ...[
+              const Gap(6),
+              Icon(Icons.check_circle, color: selectedColor, size: 16),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedShoppingItemTagChip extends StatelessWidget {
+  const _SelectedShoppingItemTagChip({
+    required this.tag,
+    required this.onRemove,
+  });
+
+  final ShoppingItemTag tag;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorValue = tag.colorValue;
+    final color = colorValue == null ? Colors.grey.shade600 : Color(colorValue);
+    final maxTextWidth = MediaQuery.widthOf(context) - 150;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+      decoration: ShapeDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: StadiumBorder(
+          side: BorderSide(color: color),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxTextWidth),
+            child: Text(
+              tag.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
+          const Gap(4),
+          InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(999),
+            child: Icon(Icons.cancel, color: color, size: 18),
+          ),
+        ],
       ),
     );
   }
@@ -332,8 +529,8 @@ class _ShoppingItemTagColorButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(100),
       child: Container(
-        width: 30,
-        height: 30,
+        width: 24,
+        height: 24,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.16),
           shape: BoxShape.circle,
