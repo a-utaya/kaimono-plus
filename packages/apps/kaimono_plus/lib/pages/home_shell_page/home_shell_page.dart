@@ -35,54 +35,652 @@ class _HomeShellPageState extends ConsumerState<HomeShellPage> {
     });
   }
 
+  void _openCreatedList(String id) {
+    ref.read(kaimonoListPageViewModelProvider.notifier).openCreatedList(id);
+    _selectTab(_listTabIndex);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          ShoppingListHistoryPage(),
-          KaimonoListPage(showFloatingActionButton: false),
-          MyPage(),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: [
+                ShoppingListHistoryPage(onOpenList: _openCreatedList),
+                const KaimonoListPage(showFloatingActionButton: false),
+                const MyPage(),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _HomeBottomNavigationBar(
+              currentIndex: _currentIndex,
+              onSelectTab: _selectTab,
+              onCreateItem: _createShoppingListItem,
+            ),
+          ),
         ],
-      ),
-      bottomNavigationBar: _HomeBottomNavigationBar(
-        currentIndex: _currentIndex,
-        onSelectTab: _selectTab,
-        onCreateItem: _createShoppingListItem,
       ),
     );
   }
 }
 
-class ShoppingListHistoryPage extends StatelessWidget {
-  const ShoppingListHistoryPage({super.key});
+class ShoppingListHistoryPage extends ConsumerStatefulWidget {
+  const ShoppingListHistoryPage({
+    required this.onOpenList,
+    super.key,
+  });
+
+  final ValueChanged<String> onOpenList;
+
+  @override
+  ConsumerState<ShoppingListHistoryPage> createState() =>
+      _ShoppingListHistoryPageState();
+}
+
+class _ShoppingListHistoryPageState
+    extends ConsumerState<ShoppingListHistoryPage> {
+  final Set<String> _selectedListIds = {};
+  bool _isReorderMode = false;
+
+  bool get _isSelectionMode => _selectedListIds.isNotEmpty;
+
+  void _enterReorderMode() {
+    setState(() {
+      _selectedListIds.clear();
+      _isReorderMode = true;
+    });
+  }
+
+  void _exitReorderMode() {
+    setState(() {
+      _isReorderMode = false;
+    });
+  }
+
+  void _clearSelection() {
+    setState(_selectedListIds.clear);
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (!_selectedListIds.add(id)) {
+        _selectedListIds.remove(id);
+      }
+    });
+  }
+
+  void _syncSelectionWithLists(List<CreatedKaimonoList> createdLists) {
+    final validIds = createdLists.map((list) => list.id).toSet();
+    if (_selectedListIds.every(validIds.contains)) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedListIds.removeWhere((id) => !validIds.contains(id));
+      });
+    });
+  }
+
+  void _confirmDeleteList(
+    BuildContext context,
+    WidgetRef ref,
+    CreatedKaimonoList list,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => ConfirmDialog(
+        title: 'リストを削除',
+        content: '「${list.displayTitle}」を削除しますか？',
+        confirmText: '削除',
+        isDestructive: true,
+        onCancel: () => Navigator.of(dialogContext).pop(),
+        onConfirm: () {
+          ref
+              .read(kaimonoListPageViewModelProvider.notifier)
+              .deleteCreatedList(list.id);
+          Navigator.of(dialogContext).pop();
+        },
+      ),
+    );
+  }
+
+  void _confirmDeleteSelectedLists(BuildContext context) {
+    final selectedCount = _selectedListIds.length;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => ConfirmDialog(
+        title: 'リストを削除',
+        content: '選択した$selectedCount件のリストを削除しますか？',
+        confirmText: '削除',
+        isDestructive: true,
+        onCancel: () => Navigator.of(dialogContext).pop(),
+        onConfirm: () {
+          ref
+              .read(kaimonoListPageViewModelProvider.notifier)
+              .deleteCreatedLists(_selectedListIds);
+          Navigator.of(dialogContext).pop();
+          _clearSelection();
+        },
+      ),
+    );
+  }
+
+  void _showColorPicker(BuildContext context, CreatedKaimonoList list) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'カードの色を変える',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                  ),
+                ),
+                const Gap(16),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _historyPaletteColors.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                  ),
+                  itemBuilder: (context, index) {
+                    final color = _historyPaletteColors[index];
+                    final isSelected = list.colorValue == color.toARGB32();
+                    return InkWell(
+                      onTap: () {
+                        ref
+                            .read(kaimonoListPageViewModelProvider.notifier)
+                            .updateCreatedListColor(list.id, color.toARGB32());
+                        Navigator.of(dialogContext).pop();
+                      },
+                      borderRadius: BorderRadius.circular(18),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.black87
+                                : Colors.black.withValues(alpha: 0.08),
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check, color: Colors.black87)
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final listState = ref.watch(kaimonoListPageViewModelProvider);
+    final createdLists = listState.createdLists;
+    _syncSelectionWithLists(createdLists);
+    final selectedCount = _selectedListIds.length;
+
+    final appBarTitle = _isSelectionMode
+        ? Text('$selectedCount件選択中')
+        : Text(_isReorderMode ? '並び替え' : '履歴');
+    final leading = _isSelectionMode
+        ? IconButton(
+            onPressed: _clearSelection,
+            icon: const Icon(Icons.close, color: Colors.white),
+          )
+        : _isReorderMode
+        ? IconButton(
+            onPressed: _exitReorderMode,
+            icon: const Icon(Icons.check, color: Colors.white),
+          )
+        : null;
+    final actions = _isSelectionMode
+        ? [
+            IconButton(
+              tooltip: '削除',
+              onPressed: () => _confirmDeleteSelectedLists(context),
+              icon: const Icon(Icons.delete_outline, color: Colors.white),
+            ),
+          ]
+        : _isReorderMode
+        ? [
+            TextButton(
+              onPressed: _exitReorderMode,
+              child: const Text(
+                '完了',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ]
+        : [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_horiz, color: Colors.white),
+              color: Colors.white,
+              onSelected: (value) {
+                if (value == 'reorder') {
+                  _enterReorderMode();
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'reorder',
+                  child: Row(
+                    children: [
+                      Icon(Icons.swap_vert, size: 20),
+                      Gap(8),
+                      Text('並び替え'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ];
+
+    final historyGrid = GridView.builder(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.viewPaddingOf(context).bottom + 24,
+      ),
+      itemCount: createdLists.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.92,
+      ),
+      itemBuilder: (context, index) {
+        final list = createdLists[index];
+        final isSelected = _selectedListIds.contains(list.id);
+        final canReorder = _isReorderMode;
+        final cardColor = _cardColorFor(list);
+
+        final card = _CreatedListCard(
+          list: list,
+          color: cardColor,
+          isSelected: isSelected,
+          isSelectionMode: _isSelectionMode,
+          isReorderMode: _isReorderMode,
+          canReorder: canReorder,
+          onTap: () {
+            if (_isSelectionMode) {
+              _toggleSelection(list.id);
+              return;
+            }
+            if (_isReorderMode) return;
+            widget.onOpenList(list.id);
+          },
+          onLongPress: _isReorderMode ? null : () => _toggleSelection(list.id),
+          onChangeColor: () => _showColorPicker(context, list),
+          onDelete: () => _confirmDeleteList(context, ref, list),
+        );
+
+        if (!_isReorderMode) {
+          return card;
+        }
+
+        return DragTarget<String>(
+          onWillAcceptWithDetails: (details) => details.data != list.id,
+          onAcceptWithDetails: (details) {
+            ref
+                .read(kaimonoListPageViewModelProvider.notifier)
+                .moveCreatedList(details.data, list.id);
+          },
+          builder: (context, candidateData, rejectedData) {
+            final isHovering = candidateData.isNotEmpty;
+            return LongPressDraggable<String>(
+              data: list.id,
+              feedback: SizedBox(
+                width: 160,
+                height: 196,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Opacity(
+                    opacity: 0.92,
+                    child: _CreatedListCard(
+                      list: list,
+                      color: cardColor,
+                      isSelected: false,
+                      isSelectionMode: false,
+                      isReorderMode: true,
+                      canReorder: false,
+                      onTap: () {},
+                      onLongPress: null,
+                      onChangeColor: () {},
+                      onDelete: () {},
+                    ),
+                  ),
+                ),
+              ),
+              childWhenDragging: Opacity(opacity: 0.35, child: card),
+              child: AnimatedScale(
+                scale: isHovering ? 0.96 : 1,
+                duration: const Duration(milliseconds: 120),
+                child: card,
+              ),
+            );
+          },
+        );
+      },
+    );
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
-        title: const Text('履歴'),
+        centerTitle: true,
+        leading: leading,
+        title: appBarTitle,
+        actions: actions,
       ),
       body: Container(
         width: double.infinity,
-        color: Colors.grey[100],
-        child: const SafeArea(
-          child: Center(
-            child: Text(
+        color: Colors.white,
+        child: SafeArea(
+          bottom: false,
+          child: createdLists.isEmpty
+              ? const _HistoryEmptyState()
+              : historyGrid,
+        ),
+      ),
+    );
+  }
+
+  Color _cardColorFor(CreatedKaimonoList list) {
+    final colorValue = list.colorValue;
+    if (colorValue != null) {
+      return Color(colorValue);
+    }
+    return _defaultHistoryCardColor;
+  }
+}
+
+const _defaultHistoryCardColor = Color(0xFFFFF4C2);
+
+/// 履歴リストの背景色リスト
+const _historyPaletteColors = [
+  _defaultHistoryCardColor,
+  Color(0xFFDFF7EA),
+  Color(0xFFFFE4EC),
+  Color(0xFFDDEEFF),
+  Color(0xFFFFE1C7),
+  Color(0xFFE8DFFF),
+];
+
+class _HistoryEmptyState extends StatelessWidget {
+  const _HistoryEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.receipt_long_outlined,
+              size: 44,
+              color: Colors.black38,
+            ),
+            Gap(12),
+            Text(
               'まだ履歴はありません',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: Colors.black54,
               ),
+            ),
+            Gap(6),
+            Text(
+              '買うものを追加すると、ここにリストが表示されます。',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.black45,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CreatedListCard extends StatelessWidget {
+  const _CreatedListCard({
+    required this.list,
+    required this.color,
+    required this.isSelected,
+    required this.isSelectionMode,
+    required this.isReorderMode,
+    required this.canReorder,
+    required this.onTap,
+    required this.onLongPress,
+    required this.onChangeColor,
+    required this.onDelete,
+  });
+
+  final CreatedKaimonoList list;
+  final Color color;
+  final bool isSelected;
+  final bool isSelectionMode;
+  final bool isReorderMode;
+  final bool canReorder;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final VoidCallback onChangeColor;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final previewItems = list.visibleItems.take(3).toList();
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSelected ? Colors.amber.shade800 : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.shopping_basket_outlined,
+                          size: 22,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (isSelectionMode)
+                      Icon(
+                        isSelected
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: isSelected
+                            ? Colors.amber.shade800
+                            : Colors.black38,
+                      )
+                    else if (isReorderMode)
+                      Icon(
+                        canReorder ? Icons.drag_handle : Icons.lock_outline,
+                        color: Colors.black45,
+                      )
+                    else
+                      SizedBox.square(
+                        dimension: 32,
+                        child: PopupMenuButton<String>(
+                          icon: const Icon(
+                            Icons.more_horiz,
+                            color: Colors.black54,
+                          ),
+                          color: Colors.white,
+                          padding: EdgeInsets.zero,
+                          onSelected: (value) {
+                            if (value == 'changeColor') {
+                              onChangeColor();
+                              return;
+                            }
+                            if (value == 'delete') {
+                              onDelete();
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'changeColor',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.palette_outlined,
+                                    size: 20,
+                                  ),
+                                  Gap(8),
+                                  Text('色を変える'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                    color: Colors.redAccent,
+                                  ),
+                                  Gap(8),
+                                  Text('削除'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const Gap(12),
+                Text(
+                  list.displayTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                  ),
+                ),
+                const Gap(10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final item in previewItems)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                item.isCompleted
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                size: 13,
+                                color: Colors.black45,
+                              ),
+                              const Gap(5),
+                              Expanded(
+                                child: Text(
+                                  item.text.trim(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 12,
+                                    decoration: item.isCompleted
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Text(
+                  _formatUpdatedAt(list.updatedAt),
+                  style: const TextStyle(
+                    color: Colors.black45,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _formatUpdatedAt(DateTime updatedAt) {
+    return '${updatedAt.month}/${updatedAt.day} 更新';
   }
 }
 
@@ -147,11 +745,12 @@ class _MyPageState extends ConsumerState<MyPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
+        centerTitle: true,
         title: const Text('マイページ'),
       ),
       body: Container(
         width: double.infinity,
-        color: Colors.grey[100],
+        color: Colors.white,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
@@ -256,7 +855,7 @@ class _HomeBottomNavigationBar extends StatelessWidget {
             bottom: 12 + bottomPadding,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: Colors.white.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(38),
               ),
               child: SizedBox(
@@ -266,7 +865,7 @@ class _HomeBottomNavigationBar extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _BottomNavigationItem(
-                        icon: Icons.history,
+                        icon: Icons.receipt_long_outlined,
                         label: '履歴',
                         isSelected: currentIndex == 0,
                         onTap: () => onSelectTab(0),
