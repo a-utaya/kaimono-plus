@@ -51,6 +51,37 @@ class KaimonoItem {
 }
 
 @immutable
+class ShoppingItemTag {
+  const ShoppingItemTag({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.updatedAt,
+    this.colorValue,
+  });
+
+  final String id;
+  final String name;
+  final int? colorValue;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ShoppingItemTag copyWith({
+    String? name,
+    int? colorValue,
+    DateTime? updatedAt,
+  }) {
+    return ShoppingItemTag(
+      id: id,
+      name: name ?? this.name,
+      colorValue: colorValue,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+@immutable
 class CreatedKaimonoList {
   const CreatedKaimonoList({
     required this.id,
@@ -106,6 +137,7 @@ class KaimonoListState {
     required this.items,
     this.currentListColorValue,
     this.historyLists = const [],
+    this.shoppingItemTags = const [],
     this.editingItemId,
   });
 
@@ -117,6 +149,7 @@ class KaimonoListState {
   final List<KaimonoItem> items;
   final int? currentListColorValue;
   final List<CreatedKaimonoList> historyLists;
+  final List<ShoppingItemTag> shoppingItemTags;
   final String? editingItemId;
 
   List<KaimonoItem> get visibleItems =>
@@ -168,6 +201,7 @@ class KaimonoListState {
     List<KaimonoItem>? items,
     int? currentListColorValue,
     List<CreatedKaimonoList>? historyLists,
+    List<ShoppingItemTag>? shoppingItemTags,
     Object? editingItemId = _editingItemIdUnset,
   }) {
     return KaimonoListState(
@@ -180,6 +214,7 @@ class KaimonoListState {
       currentListColorValue:
           currentListColorValue ?? this.currentListColorValue,
       historyLists: historyLists ?? this.historyLists,
+      shoppingItemTags: shoppingItemTags ?? this.shoppingItemTags,
       editingItemId: identical(editingItemId, _editingItemIdUnset)
           ? this.editingItemId
           : editingItemId as String?,
@@ -307,6 +342,75 @@ class _ShoppingListRepository {
   }
 }
 
+class _ShoppingItemTagRepository {
+  _ShoppingItemTagRepository({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
+
+  CollectionReference<Map<String, dynamic>> _shoppingItemTagsRef(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('shoppingItemTags');
+  }
+
+  Stream<List<ShoppingItemTag>> watchShoppingItemTags(String uid) {
+    return _shoppingItemTagsRef(uid)
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => [
+            for (final doc in snapshot.docs) _tagFromDoc(doc),
+          ],
+        );
+  }
+
+  Future<void> saveShoppingItemTag({
+    required String uid,
+    required ShoppingItemTag tag,
+  }) async {
+    await _shoppingItemTagsRef(uid).doc(tag.id).set(_tagToData(tag));
+  }
+
+  Future<void> deleteShoppingItemTag({
+    required String uid,
+    required String id,
+  }) async {
+    await _shoppingItemTagsRef(uid).doc(id).delete();
+  }
+
+  ShoppingItemTag _tagFromDoc(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    return ShoppingItemTag(
+      id: doc.id,
+      name: (data['name'] as String?) ?? '',
+      colorValue: data['colorValue'] as int?,
+      createdAt: _dateFromData(data['createdAt']),
+      updatedAt: _dateFromData(data['updatedAt']),
+    );
+  }
+
+  Map<String, dynamic> _tagToData(ShoppingItemTag tag) {
+    return {
+      'name': tag.name,
+      'colorValue': tag.colorValue,
+      'createdAt': Timestamp.fromDate(tag.createdAt),
+      'updatedAt': Timestamp.fromDate(tag.updatedAt),
+    };
+  }
+
+  DateTime _dateFromData(Object? value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    return clock.now();
+  }
+}
+
 final kaimonoListPageViewModelProvider =
     NotifierProvider.autoDispose<KaimonoListPageNotifier, KaimonoListState>(
       KaimonoListPageNotifier.new,
@@ -318,7 +422,9 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
   final Map<String, FocusNode> _itemFocusNodes = {};
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
   final _shoppingListRepository = _ShoppingListRepository();
+  final _shoppingItemTagRepository = _ShoppingItemTagRepository();
   StreamSubscription<List<CreatedKaimonoList>>? _shoppingListsSubscription;
+  StreamSubscription<List<ShoppingItemTag>>? _shoppingItemTagsSubscription;
   String? _uid;
 
   ScrollController get scrollController => _scrollController;
@@ -327,6 +433,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
   KaimonoListState build() {
     ref.onDispose(() {
       _shoppingListsSubscription?.cancel();
+      _shoppingItemTagsSubscription?.cancel();
       _disposeItemInputs();
       _scrollController.dispose();
     });
@@ -352,6 +459,126 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       currentListIsSaved: false,
       items: const [],
     );
+  }
+
+  Future<bool> createShoppingItemTag(
+    String name, {
+    required int? colorValue,
+  }) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return false;
+
+    final duplicatedTag = state.shoppingItemTags
+        .where((tag) => tag.name.trim() == trimmedName)
+        .firstOrNull;
+    if (duplicatedTag != null) return false;
+
+    final now = clock.now();
+    final tag = ShoppingItemTag(
+      id: _newTagId(),
+      name: trimmedName,
+      colorValue: colorValue,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _savePersistedTag(tag);
+    state = state.copyWith(
+      shoppingItemTags: [
+        tag,
+        for (final existingTag in state.shoppingItemTags)
+          if (existingTag.id != tag.id) existingTag,
+      ],
+    );
+    return true;
+  }
+
+  Future<bool> updateShoppingItemTag({
+    required String id,
+    required String name,
+    required int? colorValue,
+  }) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return false;
+
+    final duplicatedTag = state.shoppingItemTags
+        .where((tag) => tag.id != id && tag.name.trim() == trimmedName)
+        .firstOrNull;
+    if (duplicatedTag != null) return false;
+
+    final index = state.shoppingItemTags.indexWhere((tag) => tag.id == id);
+    if (index == -1) return false;
+
+    final updatedTag = state.shoppingItemTags[index].copyWith(
+      name: trimmedName,
+      colorValue: colorValue,
+      updatedAt: clock.now(),
+    );
+    await _savePersistedTag(updatedTag);
+    final nextTags = [
+      updatedTag,
+      for (final tag in state.shoppingItemTags)
+        if (tag.id != id) tag,
+    ];
+    state = state.copyWith(shoppingItemTags: nextTags);
+    return true;
+  }
+
+  Future<void> deleteShoppingItemTag(String id) async {
+    await _deletePersistedTag(id);
+    state = state.copyWith(
+      shoppingItemTags: state.shoppingItemTags
+          .where((tag) => tag.id != id)
+          .toList(),
+    );
+  }
+
+  void addItemFromTag(ShoppingItemTag tag) {
+    addItemsFromTags([tag]);
+  }
+
+  void addItemsFromTags(List<ShoppingItemTag> tags) {
+    if (tags.isEmpty) return;
+
+    final texts = [
+      for (final tag in tags)
+        if (tag.name.trim().isNotEmpty) tag.name.trim(),
+    ];
+    if (texts.isEmpty) return;
+
+    var nextItems = [...state.items];
+    for (final text in texts) {
+      nextItems = _itemsAddedTagText(nextItems, text);
+    }
+
+    state = state.copyWith(
+      items: nextItems,
+      editingItemId: null,
+      currentListUpdatedAt: clock.now(),
+    );
+    _savePersistedLists();
+    _scrollToBottom();
+  }
+
+  List<KaimonoItem> _itemsAddedTagText(
+    List<KaimonoItem> items,
+    String text,
+  ) {
+    if (text.isEmpty) return items;
+
+    final emptyIndex = items.indexWhere(
+      (item) => item.text.trim().isEmpty,
+    );
+    final nextItems = [...items];
+    if (emptyIndex == -1) {
+      nextItems.add(KaimonoItem(id: _newItemId(), text: text));
+    } else {
+      nextItems[emptyIndex] = nextItems[emptyIndex].copyWith(text: text);
+      final controller = _itemControllers[nextItems[emptyIndex].id];
+      if (controller != null && controller.text != text) {
+        controller.text = text;
+      }
+    }
+    return nextItems;
   }
 
   TextEditingController? getControllerForItem(String id) {
@@ -527,6 +754,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       currentListIsSaved: false,
       items: const [],
       historyLists: _historyListsWithCurrentSavedSnapshot(),
+      shoppingItemTags: state.shoppingItemTags,
     );
     _savePersistedLists();
   }
@@ -560,6 +788,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       currentListIsSaved: false,
       items: const [],
       historyLists: nextHistoryLists,
+      shoppingItemTags: state.shoppingItemTags,
     );
     return true;
   }
@@ -583,6 +812,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       items: selectedList.items,
       currentListColorValue: selectedList.colorValue,
       historyLists: _historyListsWithCurrentSavedSnapshot(),
+      shoppingItemTags: state.shoppingItemTags,
     );
   }
 
@@ -612,6 +842,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       currentListIsSaved: false,
       items: const [],
       historyLists: nextHistoryLists,
+      shoppingItemTags: state.shoppingItemTags,
     );
     _deletePersistedLists(ids);
   }
@@ -719,6 +950,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       currentListIsSaved: false,
       items: nextItems,
       historyLists: _historyListsWithCurrentSavedSnapshot(),
+      shoppingItemTags: state.shoppingItemTags,
     );
     _savePersistedLists();
   }
@@ -749,6 +981,20 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
 
   String _newItemId() => 'item-${clock.now().microsecondsSinceEpoch}';
 
+  String _newTagId() => 'tag-${clock.now().microsecondsSinceEpoch}';
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   void _disposeItemInputs() {
     for (final controller in _itemControllers.values) {
       controller.dispose();
@@ -764,7 +1010,9 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
     if (_uid == uid) return;
     _uid = uid;
     unawaited(_shoppingListsSubscription?.cancel());
+    unawaited(_shoppingItemTagsSubscription?.cancel());
     _shoppingListsSubscription = null;
+    _shoppingItemTagsSubscription = null;
 
     if (uid == null) return;
 
@@ -777,6 +1025,22 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
           },
           onError: (Object error, StackTrace stackTrace) {
             debugPrint('買い物リスト履歴の取得に失敗しました: $error');
+          },
+        );
+    _shoppingItemTagsSubscription = _shoppingItemTagRepository
+        .watchShoppingItemTags(uid)
+        .listen(
+          (tags) {
+            if (!ref.mounted) return;
+            state = state.copyWith(
+              shoppingItemTags: [
+                for (final tag in tags)
+                  if (tag.name.trim().isNotEmpty) tag,
+              ],
+            );
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            debugPrint('買うものタグの取得に失敗しました: $error');
           },
         );
   }
@@ -811,5 +1075,21 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
             debugPrint('買い物リスト履歴の削除に失敗しました: $error');
           }),
     );
+  }
+
+  Future<void> _savePersistedTag(ShoppingItemTag tag) async {
+    final uid = _currentUid();
+    if (uid == null) {
+      throw StateError('ログイン状態を確認できませんでした');
+    }
+    await _shoppingItemTagRepository.saveShoppingItemTag(uid: uid, tag: tag);
+  }
+
+  Future<void> _deletePersistedTag(String id) async {
+    final uid = _currentUid();
+    if (uid == null) {
+      throw StateError('ログイン状態を確認できませんでした');
+    }
+    await _shoppingItemTagRepository.deleteShoppingItemTag(uid: uid, id: id);
   }
 }

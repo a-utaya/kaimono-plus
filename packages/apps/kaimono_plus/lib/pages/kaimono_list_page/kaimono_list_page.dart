@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../components/confirm_dialog.dart';
@@ -11,6 +12,7 @@ import '../../ui/app_snack_bar.dart';
 import 'kaimono_list_page_view_model.dart';
 
 part 'components/kaimono_list_item.part.dart';
+part 'components/shopping_item_tag_sheet.part.dart';
 
 class KaimonoListPage extends ConsumerStatefulWidget {
   const KaimonoListPage({
@@ -199,8 +201,27 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
                 ),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showShoppingItemTagSheet(context),
+                  icon: const Icon(Icons.sell_outlined),
+                  label: const Text('タグから追加'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.amber.shade800,
+                    side: BorderSide(color: Colors.amber.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Expanded(
               child: ReorderableListView.builder(
+                scrollController: notifier.scrollController,
                 padding: EdgeInsets.fromLTRB(16, 16, 16, listBottomPadding),
                 itemCount: listState.items.length,
                 itemBuilder: (context, index) {
@@ -222,6 +243,19 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showShoppingItemTagSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => const ShoppingItemTagSheet(),
     );
   }
 }
