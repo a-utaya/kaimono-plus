@@ -49,3 +49,4 @@
 - [パスワードリセット](password-reset.md)
 - [買い物リスト共有](share-list.md)
 - [ホームナビゲーション・ログアウト](home-navigation-and-logout.md)
+- [買い物リスト履歴・タグ追加](shopping-list-history-and-tags.md)

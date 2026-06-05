@@ -604,7 +604,12 @@ class _CreatedListCard extends StatelessWidget {
                                     color: Colors.redAccent,
                                   ),
                                   Gap(8),
-                                  Text('削除'),
+                                  Text(
+                                    '削除',
+                                    style: TextStyle(
+                                      color: Colors.redAccent,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
