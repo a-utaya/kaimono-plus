@@ -1,10 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/authenticator_provider.dart';
-
-part 'sign_in_page_view_model.g.dart';
 
 /// サインイン画面の状態
 @immutable
@@ -20,8 +18,12 @@ class SignInState extends Equatable {
       SignInState(isLoading: isLoading ?? this.isLoading);
 }
 
-@riverpod
-class SignInPageViewModel extends _$SignInPageViewModel {
+final signInPageViewModelProvider =
+    NotifierProvider.autoDispose<SignInPageViewModel, SignInState>(
+      SignInPageViewModel.new,
+    );
+
+class SignInPageViewModel extends Notifier<SignInState> {
   @override
   SignInState build() => const SignInState();
 

@@ -1,11 +1,9 @@
 import 'package:auth/auth.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/authenticator_provider.dart';
-
-part 'sign_up_page_view_model.g.dart';
 
 /// サインアップ画面の状態
 @immutable
@@ -21,8 +19,12 @@ class SignUpState extends Equatable {
       SignUpState(isLoading: isLoading ?? this.isLoading);
 }
 
-@riverpod
-class SignUpPageViewModel extends _$SignUpPageViewModel {
+final signUpPageViewModelProvider =
+    NotifierProvider.autoDispose<SignUpPageViewModel, SignUpState>(
+      SignUpPageViewModel.new,
+    );
+
+class SignUpPageViewModel extends Notifier<SignUpState> {
   @override
   SignUpState build() => const SignUpState();
 
@@ -39,7 +41,9 @@ class SignUpPageViewModel extends _$SignUpPageViewModel {
     state = state.copyWith(isLoading: true);
 
     try {
-      await ref.read(authenticatorProvider).signUpWithEmailAndPassword(
+      await ref
+          .read(authenticatorProvider)
+          .signUpWithEmailAndPassword(
             email: email,
             password: password,
           );
