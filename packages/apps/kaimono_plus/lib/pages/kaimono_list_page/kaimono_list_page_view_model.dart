@@ -6,6 +6,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../home_widget/kaimono_home_widget.dart';
 import '../../providers/authenticator_provider.dart';
 
 /// [KaimonoListState.copyWith] で `editingItemId` を変更しない場合と、
@@ -139,6 +140,7 @@ class KaimonoListState {
     this.historyLists = const [],
     this.shoppingItemTags = const [],
     this.editingItemId,
+    this.homeWidgetListId,
   });
 
   final String currentListId;
@@ -151,6 +153,7 @@ class KaimonoListState {
   final List<CreatedKaimonoList> historyLists;
   final List<ShoppingItemTag> shoppingItemTags;
   final String? editingItemId;
+  final String? homeWidgetListId;
 
   List<KaimonoItem> get visibleItems =>
       items.where((item) => item.text.trim().isNotEmpty).toList();
@@ -203,6 +206,7 @@ class KaimonoListState {
     List<CreatedKaimonoList>? historyLists,
     List<ShoppingItemTag>? shoppingItemTags,
     Object? editingItemId = _editingItemIdUnset,
+    Object? homeWidgetListId = _editingItemIdUnset,
   }) {
     return KaimonoListState(
       currentListId: currentListId ?? this.currentListId,
@@ -218,6 +222,9 @@ class KaimonoListState {
       editingItemId: identical(editingItemId, _editingItemIdUnset)
           ? this.editingItemId
           : editingItemId as String?,
+      homeWidgetListId: identical(homeWidgetListId, _editingItemIdUnset)
+          ? this.homeWidgetListId
+          : homeWidgetListId as String?,
     );
   }
 
@@ -426,6 +433,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
   StreamSubscription<List<CreatedKaimonoList>>? _shoppingListsSubscription;
   StreamSubscription<List<ShoppingItemTag>>? _shoppingItemTagsSubscription;
   String? _uid;
+  var _didRestoreHomeWidgetListId = false;
 
   ScrollController get scrollController => _scrollController;
 
@@ -451,6 +459,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       final user = ref.read(authStateChangesProvider).value;
       _setUid(user?.uid);
     });
+    unawaited(_restoreHomeWidgetListId());
     return KaimonoListState(
       currentListId: _newListId(),
       currentListTitle: '',
@@ -459,6 +468,14 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       currentListIsSaved: false,
       items: const [],
     );
+  }
+
+  Future<void> _restoreHomeWidgetListId() async {
+    final id = await KaimonoHomeWidget.displayedListId();
+    _didRestoreHomeWidgetListId = true;
+    if (!ref.mounted) return;
+    state = state.copyWith(homeWidgetListId: id);
+    _syncHomeWidget(state.createdLists);
   }
 
   Future<bool> createShoppingItemTag(
@@ -755,6 +772,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       items: const [],
       historyLists: _historyListsWithCurrentSavedSnapshot(),
       shoppingItemTags: state.shoppingItemTags,
+      homeWidgetListId: state.homeWidgetListId,
     );
     _savePersistedLists();
   }
@@ -776,6 +794,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       uid: uid,
       lists: nextHistoryLists,
     );
+    _syncHomeWidget(nextHistoryLists);
 
     _disposeItemInputs();
 
@@ -789,6 +808,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       items: const [],
       historyLists: nextHistoryLists,
       shoppingItemTags: state.shoppingItemTags,
+      homeWidgetListId: state.homeWidgetListId,
     );
     return true;
   }
@@ -813,6 +833,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       currentListColorValue: selectedList.colorValue,
       historyLists: _historyListsWithCurrentSavedSnapshot(),
       shoppingItemTags: state.shoppingItemTags,
+      homeWidgetListId: state.homeWidgetListId,
     );
   }
 
@@ -824,10 +845,17 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
     final nextHistoryLists = state.historyLists
         .where((list) => !ids.contains(list.id))
         .toList();
+    final homeWidgetListId = ids.contains(state.homeWidgetListId)
+        ? null
+        : state.homeWidgetListId;
 
     if (!ids.contains(state.currentListId)) {
-      state = state.copyWith(historyLists: nextHistoryLists);
+      state = state.copyWith(
+        historyLists: nextHistoryLists,
+        homeWidgetListId: homeWidgetListId,
+      );
       _deletePersistedLists(ids);
+      _syncHomeWidget(state.createdLists);
       return;
     }
 
@@ -843,8 +871,23 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       items: const [],
       historyLists: nextHistoryLists,
       shoppingItemTags: state.shoppingItemTags,
+      homeWidgetListId: homeWidgetListId,
     );
     _deletePersistedLists(ids);
+    _syncHomeWidget(state.createdLists);
+  }
+
+  void showCreatedListOnHomeScreen(String id) {
+    final list = state.createdLists.where((list) => list.id == id).firstOrNull;
+    if (list == null || list.visibleItems.isEmpty) return;
+
+    state = state.copyWith(homeWidgetListId: id);
+    _syncHomeWidget(state.createdLists);
+  }
+
+  void removeCreatedListFromHomeScreen() {
+    state = state.copyWith(homeWidgetListId: null);
+    _syncHomeWidget(state.createdLists);
   }
 
   void moveCreatedList(String movedId, String targetId) {
@@ -951,6 +994,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       items: nextItems,
       historyLists: _historyListsWithCurrentSavedSnapshot(),
       shoppingItemTags: state.shoppingItemTags,
+      homeWidgetListId: state.homeWidgetListId,
     );
     _savePersistedLists();
   }
@@ -1022,6 +1066,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
           (lists) {
             if (!ref.mounted) return;
             state = state.copyWith(historyLists: lists);
+            _syncHomeWidget(state.createdLists);
           },
           onError: (Object error, StackTrace stackTrace) {
             debugPrint('買い物リスト履歴の取得に失敗しました: $error');
@@ -1056,12 +1101,53 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
   void _savePersistedLists() {
     final uid = _currentUid();
     if (uid == null) return;
+    final lists = _persistedLists();
+    _syncHomeWidget(lists);
     unawaited(
       _shoppingListRepository
-          .saveShoppingLists(uid: uid, lists: _persistedLists())
+          .saveShoppingLists(uid: uid, lists: lists)
           .catchError((Object error, StackTrace stackTrace) {
             debugPrint('買い物リスト履歴の保存に失敗しました: $error');
           }),
+    );
+  }
+
+  void _syncHomeWidget(List<CreatedKaimonoList> lists) {
+    if (!_didRestoreHomeWidgetListId) return;
+
+    final homeWidgetListId = state.homeWidgetListId;
+    final list = homeWidgetListId == null
+        ? null
+        : lists
+              .where(
+                (list) =>
+                    list.id == homeWidgetListId && list.visibleItems.isNotEmpty,
+              )
+              .firstOrNull;
+    if (list == null) {
+      unawaited(
+        KaimonoHomeWidget.clear().catchError(
+          (Object error, StackTrace stackTrace) {
+            debugPrint('ホームウィジェットのクリアに失敗しました: $error');
+          },
+        ),
+      );
+      return;
+    }
+
+    final pendingItems = [
+      for (final item in list.visibleItems)
+        if (!item.isCompleted) item.text.trim(),
+    ];
+    unawaited(
+      KaimonoHomeWidget.syncLatestList(
+        id: list.id,
+        title: list.displayTitle,
+        pendingItems: pendingItems,
+        updatedAt: list.updatedAt,
+      ).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('ホームウィジェットの更新に失敗しました: $error');
+      }),
     );
   }
 

@@ -328,11 +328,13 @@ class _ShoppingListHistoryPageState
         final isSelected = _selectedListIds.contains(list.id);
         final canReorder = _isReorderMode;
         final cardColor = _cardColorFor(list);
+        final isHomeWidgetList = listState.homeWidgetListId == list.id;
 
         final card = _CreatedListCard(
           list: list,
           color: cardColor,
           isSelected: isSelected,
+          isHomeWidgetList: isHomeWidgetList,
           isSelectionMode: _isSelectionMode,
           isReorderMode: _isReorderMode,
           canReorder: canReorder,
@@ -346,6 +348,16 @@ class _ShoppingListHistoryPageState
           },
           onLongPress: _isReorderMode ? null : () => _toggleSelection(list.id),
           onChangeColor: () => _showColorPicker(context, list),
+          onShowOnHomeScreen: () {
+            ref
+                .read(kaimonoListPageViewModelProvider.notifier)
+                .showCreatedListOnHomeScreen(list.id);
+          },
+          onRemoveFromHomeScreen: () {
+            ref
+                .read(kaimonoListPageViewModelProvider.notifier)
+                .removeCreatedListFromHomeScreen();
+          },
           onDelete: () => _confirmDeleteList(context, ref, list),
         );
 
@@ -375,12 +387,15 @@ class _ShoppingListHistoryPageState
                       list: list,
                       color: cardColor,
                       isSelected: false,
+                      isHomeWidgetList: isHomeWidgetList,
                       isSelectionMode: false,
                       isReorderMode: true,
                       canReorder: false,
                       onTap: () {},
                       onLongPress: null,
                       onChangeColor: () {},
+                      onShowOnHomeScreen: () {},
+                      onRemoveFromHomeScreen: () {},
                       onDelete: () {},
                     ),
                   ),
@@ -486,24 +501,30 @@ class _CreatedListCard extends StatelessWidget {
     required this.list,
     required this.color,
     required this.isSelected,
+    required this.isHomeWidgetList,
     required this.isSelectionMode,
     required this.isReorderMode,
     required this.canReorder,
     required this.onTap,
     required this.onLongPress,
     required this.onChangeColor,
+    required this.onShowOnHomeScreen,
+    required this.onRemoveFromHomeScreen,
     required this.onDelete,
   });
 
   final CreatedKaimonoList list;
   final Color color;
   final bool isSelected;
+  final bool isHomeWidgetList;
   final bool isSelectionMode;
   final bool isReorderMode;
   final bool canReorder;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final VoidCallback onChangeColor;
+  final VoidCallback onShowOnHomeScreen;
+  final VoidCallback onRemoveFromHomeScreen;
   final VoidCallback onDelete;
 
   @override
@@ -576,12 +597,20 @@ class _CreatedListCard extends StatelessWidget {
                               onChangeColor();
                               return;
                             }
+                            if (value == 'showOnHomeScreen') {
+                              onShowOnHomeScreen();
+                              return;
+                            }
+                            if (value == 'removeFromHomeScreen') {
+                              onRemoveFromHomeScreen();
+                              return;
+                            }
                             if (value == 'delete') {
                               onDelete();
                             }
                           },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
                               value: 'changeColor',
                               child: Row(
                                 children: [
@@ -594,7 +623,50 @@ class _CreatedListCard extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            PopupMenuItem(
+                            if (isHomeWidgetList)
+                              const PopupMenuItem(
+                                enabled: false,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.home_filled,
+                                      size: 20,
+                                      color: Colors.amber,
+                                    ),
+                                    Gap(8),
+                                    Text('ホーム画面に表示中'),
+                                  ],
+                                ),
+                              )
+                            else
+                              const PopupMenuItem(
+                                value: 'showOnHomeScreen',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.add_home_outlined,
+                                      size: 20,
+                                    ),
+                                    Gap(8),
+                                    Text('ホーム画面に表示'),
+                                  ],
+                                ),
+                              ),
+                            if (isHomeWidgetList)
+                              const PopupMenuItem(
+                                value: 'removeFromHomeScreen',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.home_outlined,
+                                      size: 20,
+                                    ),
+                                    Gap(8),
+                                    Text('ホーム画面から外す'),
+                                  ],
+                                ),
+                              ),
+                            const PopupMenuItem(
                               value: 'delete',
                               child: Row(
                                 children: [
