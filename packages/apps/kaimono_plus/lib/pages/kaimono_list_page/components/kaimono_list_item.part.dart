@@ -68,8 +68,9 @@ class KaimonoListItem extends StatelessWidget {
                 child: isEditing
                     ? TextField(
                         controller: controller,
+                        focusNode: vm.getFocusNodeForItem(item.id),
                         cursorColor: Colors.amber,
-                        autofocus: true,
+                        textInputAction: TextInputAction.next,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -87,11 +88,9 @@ class KaimonoListItem extends StatelessWidget {
                           );
                         },
                         onSubmitted: (_) {
-                          vm.stopEditing(item.id);
+                          vm.submitItem(item.id);
                         },
-                        onEditingComplete: () {
-                          vm.stopEditing(item.id);
-                        },
+                        onEditingComplete: () {},
                       )
                     : Text(
                         item.text,

@@ -43,19 +43,29 @@ class _HomeShellPageState extends ConsumerState<HomeShellPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Stack(
         children: [
-          ShoppingListHistoryPage(onOpenList: _openCreatedList),
-          const KaimonoListPage(showFloatingActionButton: false),
-          const MyPage(),
+          Positioned.fill(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: [
+                ShoppingListHistoryPage(onOpenList: _openCreatedList),
+                const KaimonoListPage(showFloatingActionButton: false),
+                const MyPage(),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _HomeBottomNavigationBar(
+              currentIndex: _currentIndex,
+              onSelectTab: _selectTab,
+              onCreateItem: _createShoppingListItem,
+            ),
+          ),
         ],
-      ),
-      bottomNavigationBar: _HomeBottomNavigationBar(
-        currentIndex: _currentIndex,
-        onSelectTab: _selectTab,
-        onCreateItem: _createShoppingListItem,
       ),
     );
   }
@@ -179,7 +189,7 @@ class _ShoppingListHistoryPageState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '色を変える',
+                  'カードの色を変える',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -192,7 +202,7 @@ class _ShoppingListHistoryPageState
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _historyPaletteColors.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
+                    crossAxisCount: 3,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
                   ),
@@ -300,7 +310,12 @@ class _ShoppingListHistoryPageState
           ];
 
     final historyGrid = GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.viewPaddingOf(context).bottom + 24,
+      ),
       itemCount: createdLists.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -311,9 +326,8 @@ class _ShoppingListHistoryPageState
       itemBuilder: (context, index) {
         final list = createdLists[index];
         final isSelected = _selectedListIds.contains(list.id);
-        final isCurrentList = list.id == listState.currentListId;
-        final canReorder = _isReorderMode && !isCurrentList;
-        final cardColor = _cardColorFor(list, index);
+        final canReorder = _isReorderMode;
+        final cardColor = _cardColorFor(list);
 
         final card = _CreatedListCard(
           list: list,
@@ -330,15 +344,12 @@ class _ShoppingListHistoryPageState
             if (_isReorderMode) return;
             widget.onOpenList(list.id);
           },
-          onLongPress: () {
-            if (_isReorderMode) return;
-            _toggleSelection(list.id);
-          },
+          onLongPress: _isReorderMode ? null : () => _toggleSelection(list.id),
           onChangeColor: () => _showColorPicker(context, list),
           onDelete: () => _confirmDeleteList(context, ref, list),
         );
 
-        if (!_isReorderMode || isCurrentList) {
+        if (!_isReorderMode) {
           return card;
         }
 
@@ -355,20 +366,23 @@ class _ShoppingListHistoryPageState
               data: list.id,
               feedback: SizedBox(
                 width: 160,
-                height: 174,
-                child: Opacity(
-                  opacity: 0.92,
-                  child: _CreatedListCard(
-                    list: list,
-                    color: cardColor,
-                    isSelected: false,
-                    isSelectionMode: false,
-                    isReorderMode: true,
-                    canReorder: false,
-                    onTap: () {},
-                    onLongPress: () {},
-                    onChangeColor: () {},
-                    onDelete: () {},
+                height: 196,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Opacity(
+                    opacity: 0.92,
+                    child: _CreatedListCard(
+                      list: list,
+                      color: cardColor,
+                      isSelected: false,
+                      isSelectionMode: false,
+                      isReorderMode: true,
+                      canReorder: false,
+                      onTap: () {},
+                      onLongPress: null,
+                      onChangeColor: () {},
+                      onDelete: () {},
+                    ),
                   ),
                 ),
               ),
@@ -394,8 +408,9 @@ class _ShoppingListHistoryPageState
       ),
       body: Container(
         width: double.infinity,
-        color: Colors.grey[100],
+        color: Colors.white,
         child: SafeArea(
+          bottom: false,
           child: createdLists.isEmpty
               ? const _HistoryEmptyState()
               : historyGrid,
@@ -404,31 +419,25 @@ class _ShoppingListHistoryPageState
     );
   }
 
-  Color _cardColorFor(CreatedKaimonoList list, int index) {
+  Color _cardColorFor(CreatedKaimonoList list) {
     final colorValue = list.colorValue;
     if (colorValue != null) {
       return Color(colorValue);
     }
-    return _historyCardColors[index % _historyCardColors.length];
+    return _defaultHistoryCardColor;
   }
 }
 
-const _historyCardColors = [
-  Color(0xFFFFF4C2),
-  Color(0xFFDFF7EA),
-  Color(0xFFFFE4EC),
-  Color(0xFFDDEEFF),
-];
+const _defaultHistoryCardColor = Color(0xFFFFF4C2);
 
+/// 履歴リストの背景色リスト
 const _historyPaletteColors = [
-  Color(0xFFFFF4C2),
+  _defaultHistoryCardColor,
   Color(0xFFDFF7EA),
   Color(0xFFFFE4EC),
   Color(0xFFDDEEFF),
   Color(0xFFFFE1C7),
   Color(0xFFE8DFFF),
-  Color(0xFFFFF9D9),
-  Color(0xFFE2F3F5),
 ];
 
 class _HistoryEmptyState extends StatelessWidget {
@@ -493,7 +502,7 @@ class _CreatedListCard extends StatelessWidget {
   final bool isReorderMode;
   final bool canReorder;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
   final VoidCallback onChangeColor;
   final VoidCallback onDelete;
 
@@ -619,6 +628,7 @@ class _CreatedListCard extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       for (final item in previewItems)
                         Padding(
@@ -740,7 +750,7 @@ class _MyPageState extends ConsumerState<MyPage> {
       ),
       body: Container(
         width: double.infinity,
-        color: Colors.grey[100],
+        color: Colors.white,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
@@ -845,7 +855,7 @@ class _HomeBottomNavigationBar extends StatelessWidget {
             bottom: 12 + bottomPadding,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: Colors.white.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(38),
               ),
               child: SizedBox(

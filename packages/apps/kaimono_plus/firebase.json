@@ -51,6 +51,9 @@
       "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
     }
   ],
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
     "public": "web",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],

@@ -118,10 +118,19 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
           IconButton(
             tooltip: '保存',
             onPressed: listState.visibleItems.isNotEmpty
-                ? () {
-                    final saved = notifier.saveCurrentList();
-                    if (!saved) return;
-                    showAppSnackBar(context, '買うものリストを保存しました');
+                ? () async {
+                    try {
+                      final saved = await notifier.saveCurrentList();
+                      if (!context.mounted || !saved) return;
+                      showAppSnackBar(context, '買うものリストを保存しました');
+                    } catch (_) {
+                      if (!context.mounted) return;
+                      showAppSnackBar(
+                        context,
+                        '買うものリストを保存できませんでした。Firestore の権限を確認してください。',
+                        isError: true,
+                      );
+                    }
                   }
                 : null,
             icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
@@ -166,7 +175,7 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
           : null,
       body: Container(
         height: double.infinity,
-        color: Colors.grey[100],
+        color: Colors.white,
         child: Column(
           children: [
             Padding(
