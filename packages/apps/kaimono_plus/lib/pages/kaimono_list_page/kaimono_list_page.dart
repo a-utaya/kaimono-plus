@@ -89,6 +89,7 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
+        centerTitle: true,
         title: const Text('買い物リスト'),
         leading: IconButton(
           onPressed: () {
@@ -114,6 +115,17 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
           icon: const Icon(Icons.delete_outline, color: Colors.white),
         ),
         actions: [
+          IconButton(
+            tooltip: '保存',
+            onPressed: listState.visibleItems.isNotEmpty
+                ? () {
+                    final saved = notifier.saveCurrentList();
+                    if (!saved) return;
+                    showAppSnackBar(context, '買うものリストを保存しました');
+                  }
+                : null,
+            icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+          ),
           IconButton(
             onPressed: listState.hasShareableItems
                 ? () async {
@@ -155,23 +167,50 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
       body: Container(
         height: double.infinity,
         color: Colors.grey[100],
-        child: ReorderableListView.builder(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, listBottomPadding),
-          itemCount: listState.items.length,
-          itemBuilder: (context, index) {
-            final item = listState.items[index];
-            final isEditing = listState.editingItemId == item.id;
-            final controller = notifier.getControllerForItem(item.id);
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: TextFormField(
+                key: ValueKey(listState.currentListId),
+                initialValue: listState.currentListTitle,
+                onChanged: notifier.updateListTitle,
+                maxLength: 30,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  counterText: '',
+                  filled: true,
+                  fillColor: Colors.white,
+                  hintText: 'リストのタイトル',
+                  prefixIcon: const Icon(Icons.shopping_bag_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ReorderableListView.builder(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, listBottomPadding),
+                itemCount: listState.items.length,
+                itemBuilder: (context, index) {
+                  final item = listState.items[index];
+                  final isEditing = listState.editingItemId == item.id;
+                  final controller = notifier.getControllerForItem(item.id);
 
-            return KaimonoListItem(
-              key: ValueKey(item.id),
-              item: item,
-              isEditing: isEditing,
-              controller: controller!,
-              notifier: notifier,
-            );
-          },
-          onReorder: notifier.reorderItems,
+                  return KaimonoListItem(
+                    key: ValueKey(item.id),
+                    item: item,
+                    isEditing: isEditing,
+                    controller: controller!,
+                    notifier: notifier,
+                  );
+                },
+                onReorder: notifier.reorderItems,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -46,20 +46,88 @@ class KaimonoItem {
 }
 
 @immutable
+class CreatedKaimonoList {
+  const CreatedKaimonoList({
+    required this.id,
+    required this.title,
+    required this.items,
+    required this.createdAt,
+    required this.updatedAt,
+    this.colorValue,
+  });
+
+  final String id;
+  final String title;
+  final List<KaimonoItem> items;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int? colorValue;
+
+  List<KaimonoItem> get visibleItems =>
+      items.where((item) => item.text.trim().isNotEmpty).toList();
+
+  String get displayTitle => title.trim().isEmpty ? '買うものリスト' : title;
+
+  int get completedCount =>
+      visibleItems.where((item) => item.isCompleted).length;
+
+  int get pendingCount => visibleItems.length - completedCount;
+
+  CreatedKaimonoList copyWith({
+    String? title,
+    List<KaimonoItem>? items,
+    DateTime? updatedAt,
+    int? colorValue,
+  }) {
+    return CreatedKaimonoList(
+      id: id,
+      title: title ?? this.title,
+      items: items ?? this.items,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      colorValue: colorValue ?? this.colorValue,
+    );
+  }
+}
+
+@immutable
 class KaimonoListState {
   const KaimonoListState({
+    required this.currentListId,
+    required this.currentListTitle,
+    required this.currentListCreatedAt,
+    required this.currentListUpdatedAt,
     required this.items,
+    this.currentListColorValue,
+    this.historyLists = const [],
     this.editingItemId,
   });
 
+  final String currentListId;
+  final String currentListTitle;
+  final DateTime currentListCreatedAt;
+  final DateTime currentListUpdatedAt;
   final List<KaimonoItem> items;
+  final int? currentListColorValue;
+  final List<CreatedKaimonoList> historyLists;
   final String? editingItemId;
+
+  List<KaimonoItem> get visibleItems =>
+      items.where((item) => item.text.trim().isNotEmpty).toList();
 
   List<KaimonoItem> get shareableItems => items
       .where((item) => item.text.trim().isNotEmpty && !item.isCompleted)
       .toList();
 
   bool get hasShareableItems => shareableItems.isNotEmpty;
+
+  List<CreatedKaimonoList> get createdLists {
+    final currentList = _currentListSnapshot();
+    return [
+      if (currentList != null) currentList,
+      ...historyLists,
+    ];
+  }
 
   String get shareText {
     final lines = <String>['買うもの', ''];
@@ -70,14 +138,39 @@ class KaimonoListState {
   }
 
   KaimonoListState copyWith({
+    String? currentListId,
+    String? currentListTitle,
+    DateTime? currentListCreatedAt,
+    DateTime? currentListUpdatedAt,
     List<KaimonoItem>? items,
+    int? currentListColorValue,
+    List<CreatedKaimonoList>? historyLists,
     Object? editingItemId = _editingItemIdUnset,
   }) {
     return KaimonoListState(
+      currentListId: currentListId ?? this.currentListId,
+      currentListTitle: currentListTitle ?? this.currentListTitle,
+      currentListCreatedAt: currentListCreatedAt ?? this.currentListCreatedAt,
+      currentListUpdatedAt: currentListUpdatedAt ?? this.currentListUpdatedAt,
       items: items ?? this.items,
+      currentListColorValue:
+          currentListColorValue ?? this.currentListColorValue,
+      historyLists: historyLists ?? this.historyLists,
       editingItemId: identical(editingItemId, _editingItemIdUnset)
           ? this.editingItemId
           : editingItemId as String?,
+    );
+  }
+
+  CreatedKaimonoList? _currentListSnapshot() {
+    if (visibleItems.isEmpty) return null;
+    return CreatedKaimonoList(
+      id: currentListId,
+      title: currentListTitle,
+      items: items,
+      createdAt: currentListCreatedAt,
+      updatedAt: currentListUpdatedAt,
+      colorValue: currentListColorValue,
     );
   }
 }
@@ -103,7 +196,14 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       _itemControllers.clear();
       _scrollController.dispose();
     });
-    return const KaimonoListState(items: []);
+    final now = clock.now();
+    return KaimonoListState(
+      currentListId: _newListId(),
+      currentListTitle: '',
+      currentListCreatedAt: now,
+      currentListUpdatedAt: now,
+      items: const [],
+    );
   }
 
   TextEditingController? getControllerForItem(String id) {
@@ -165,16 +265,24 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
 
     final nextItems = [...state.items];
     nextItems[index] = nextItems[index].copyWith(text: trimmedText);
-    state = state.copyWith(items: nextItems);
+    state = state.copyWith(items: nextItems, currentListUpdatedAt: clock.now());
+  }
+
+  void updateListTitle(String title) {
+    state = state.copyWith(
+      currentListTitle: title.trim(),
+      currentListUpdatedAt: clock.now(),
+    );
   }
 
   void addItem() {
-    final newId = clock.now().millisecondsSinceEpoch.toString();
+    final newId = _newItemId();
     state = state.copyWith(
       items: [
         ...state.items,
         KaimonoItem(id: newId, text: ''),
       ],
+      currentListUpdatedAt: clock.now(),
     );
     debugPrint('addItem: 新しいアイテムを追加します');
 
@@ -197,7 +305,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
     final nextItems = [...state.items];
     final item = nextItems[index];
     nextItems[index] = item.copyWith(isCompleted: !item.isCompleted);
-    state = state.copyWith(items: nextItems);
+    state = state.copyWith(items: nextItems, currentListUpdatedAt: clock.now());
   }
 
   void removeItem(String id) {
@@ -206,7 +314,11 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
     _itemControllers.remove(id);
 
     final nextEditing = state.editingItemId == id ? null : state.editingItemId;
-    state = state.copyWith(items: nextItems, editingItemId: nextEditing);
+    state = state.copyWith(
+      items: nextItems,
+      editingItemId: nextEditing,
+      currentListUpdatedAt: clock.now(),
+    );
   }
 
   void reorderItems(int oldIndex, int newIndex) {
@@ -216,7 +328,7 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
     final nextItems = [...state.items];
     final item = nextItems.removeAt(oldIndex);
     nextItems.insert(newIndex, item);
-    state = state.copyWith(items: nextItems);
+    state = state.copyWith(items: nextItems, currentListUpdatedAt: clock.now());
   }
 
   void clearAllItems() {
@@ -224,7 +336,127 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       controller.dispose();
     }
     _itemControllers.clear();
-    state = const KaimonoListState(items: []);
+    final now = clock.now();
+    state = KaimonoListState(
+      currentListId: _newListId(),
+      currentListTitle: '',
+      currentListCreatedAt: now,
+      currentListUpdatedAt: now,
+      items: const [],
+      historyLists: _historyWithCurrentSnapshot(),
+    );
+  }
+
+  bool saveCurrentList() {
+    if (state.visibleItems.isEmpty) return false;
+
+    for (final controller in _itemControllers.values) {
+      controller.dispose();
+    }
+    _itemControllers.clear();
+
+    final now = clock.now();
+    state = KaimonoListState(
+      currentListId: _newListId(),
+      currentListTitle: '',
+      currentListCreatedAt: now,
+      currentListUpdatedAt: now,
+      items: const [],
+      historyLists: _historyWithCurrentSnapshot(),
+    );
+    return true;
+  }
+
+  void openCreatedList(String id) {
+    if (id == state.currentListId) return;
+
+    final selectedList = state.historyLists
+        .where((list) => list.id == id)
+        .firstOrNull;
+    if (selectedList == null) return;
+
+    for (final controller in _itemControllers.values) {
+      controller.dispose();
+    }
+    _itemControllers.clear();
+
+    state = KaimonoListState(
+      currentListId: selectedList.id,
+      currentListTitle: selectedList.title,
+      currentListCreatedAt: selectedList.createdAt,
+      currentListUpdatedAt: clock.now(),
+      items: selectedList.items,
+      currentListColorValue: selectedList.colorValue,
+      historyLists: [
+        ..._historyWithCurrentSnapshot(),
+      ].where((list) => list.id != selectedList.id).toList(),
+    );
+  }
+
+  void deleteCreatedList(String id) {
+    deleteCreatedLists({id});
+  }
+
+  void deleteCreatedLists(Set<String> ids) {
+    final nextHistoryLists = state.historyLists
+        .where((list) => !ids.contains(list.id))
+        .toList();
+
+    if (!ids.contains(state.currentListId)) {
+      state = state.copyWith(historyLists: nextHistoryLists);
+      return;
+    }
+
+    for (final controller in _itemControllers.values) {
+      controller.dispose();
+    }
+    _itemControllers.clear();
+
+    final now = clock.now();
+    state = KaimonoListState(
+      currentListId: _newListId(),
+      currentListTitle: '',
+      currentListCreatedAt: now,
+      currentListUpdatedAt: now,
+      items: const [],
+      historyLists: nextHistoryLists,
+    );
+  }
+
+  void moveCreatedList(String movedId, String targetId) {
+    if (movedId == targetId) return;
+    if (movedId == state.currentListId || targetId == state.currentListId) {
+      return;
+    }
+
+    final nextHistoryLists = [...state.historyLists];
+    final oldIndex = nextHistoryLists.indexWhere((list) => list.id == movedId);
+    final newIndex = nextHistoryLists.indexWhere((list) => list.id == targetId);
+    if (oldIndex == -1 || newIndex == -1) return;
+
+    final movedList = nextHistoryLists.removeAt(oldIndex);
+    nextHistoryLists.insert(newIndex, movedList);
+    state = state.copyWith(historyLists: nextHistoryLists);
+  }
+
+  void updateCreatedListColor(String id, int colorValue) {
+    if (id == state.currentListId) {
+      state = state.copyWith(
+        currentListColorValue: colorValue,
+        currentListUpdatedAt: clock.now(),
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      historyLists: [
+        for (final list in state.historyLists)
+          if (list.id == id)
+            list.copyWith(colorValue: colorValue, updatedAt: clock.now())
+          else
+            list,
+      ],
+    );
   }
 
   Future<SharedKaimonoList> createSharedList() async {
@@ -288,6 +520,28 @@ class KaimonoListPageNotifier extends Notifier<KaimonoListState> {
       controller.dispose();
     }
     _itemControllers.clear();
-    state = KaimonoListState(items: nextItems);
+    final now = clock.now();
+    state = KaimonoListState(
+      currentListId: _newListId(),
+      currentListTitle: '',
+      currentListCreatedAt: now,
+      currentListUpdatedAt: now,
+      items: nextItems,
+      historyLists: _historyWithCurrentSnapshot(),
+    );
   }
+
+  List<CreatedKaimonoList> _historyWithCurrentSnapshot() {
+    final currentList = state._currentListSnapshot();
+    if (currentList == null) return state.historyLists;
+
+    return [
+      currentList,
+      ...state.historyLists.where((list) => list.id != currentList.id),
+    ];
+  }
+
+  String _newListId() => 'list-${clock.now().microsecondsSinceEpoch}';
+
+  String _newItemId() => 'item-${clock.now().microsecondsSinceEpoch}';
 }
