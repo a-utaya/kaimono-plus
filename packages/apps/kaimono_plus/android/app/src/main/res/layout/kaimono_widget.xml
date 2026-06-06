@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/kaimono_widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/kaimono_widget_background"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:id="@+id/kaimono_widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#222222"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        tools:text="買うものリスト" />
+
+    <LinearLayout
+        android:id="@+id/kaimono_widget_items"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_1"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ 牛乳" />
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_2"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ 卵" />
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_3"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ 大根" />
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_4"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ きゅうり" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_5"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ トマト" />
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_6"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ にんじん" />
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_7"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ 豆腐" />
+
+            <TextView
+                android:id="@+id/kaimono_widget_item_8"
+                style="@style/KaimonoWidgetItem"
+                tools:text="○ みそ" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/kaimono_widget_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:textColor="#777777"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="保存したリストがありません"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/kaimono_widget_updated_at"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#8A826B"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        tools:text="6/6 更新" />
+</LinearLayout>

@@ -105,6 +105,7 @@ class KaimonoHomeWidget {
 
   static bool get _supportsHomeWidget {
     if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.iOS;
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
   }
 }

@@ -131,8 +131,11 @@ class FirebaseAuthenticator {
   String _signInErrorMessage(String code) {
     switch (code) {
       case 'invalid-email':
+      case 'invalid-credential':
       case 'wrong-password':
         return 'メールアドレスまたはパスワードが間違っています';
+      case 'network-request-failed':
+        return '通信に失敗しました。ネットワーク接続を確認してください';
       case 'user-disabled':
         return 'アカウントが無効です';
       case 'user-not-found':
