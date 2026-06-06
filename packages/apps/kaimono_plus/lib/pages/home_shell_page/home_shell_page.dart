@@ -697,7 +697,69 @@ class MyPage extends ConsumerStatefulWidget {
 }
 
 class _MyPageState extends ConsumerState<MyPage> {
+  static const _appVersion = '1.0.0';
+  static const _appBuildNumber = '1';
+
   bool _isSigningOut = false;
+
+  void _showInfoDialog({
+    required String title,
+    required String content,
+  }) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        title: Center(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    _showInfoDialog(
+      title: 'プライバシーポリシー',
+      content:
+          'プライバシーポリシーの公開準備中です。'
+          '公開URLが決まり次第、こちらから確認できるようにします。',
+    );
+  }
+
+  void _showContact() {
+    _showInfoDialog(
+      title: 'お問い合わせ',
+      content:
+          'お問い合わせ・不具合報告の受付先を準備中です。'
+          '困ったことや気になる点を送れる導線をこちらに追加します。',
+    );
+  }
+
+  void _showAccountDeletion() {
+    _showInfoDialog(
+      title: 'アカウント削除',
+      content:
+          'アカウント削除の機能は準備中です。'
+          '保存した買い物リストやタグも含めて削除できるように対応します。',
+    );
+  }
 
   Future<void> _showSignOutDialog() async {
     await showDialog<void>(
@@ -739,14 +801,6 @@ class _MyPageState extends ConsumerState<MyPage> {
 
   @override
   Widget build(BuildContext context) {
-    final email = ref
-        .watch(authStateChangesProvider)
-        .when(
-          data: (user) => user?.email,
-          error: (_, _) => null,
-          loading: () => null,
-        );
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
@@ -757,75 +811,110 @@ class _MyPageState extends ConsumerState<MyPage> {
         width: double.infinity,
         color: Colors.white,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(28, 20, 28, 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.amber.shade100,
-                          child: const Icon(
-                            Icons.person_outline,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const Gap(16),
-                        Expanded(
-                          child: Text(
-                            email ?? 'ログイン中',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                _MyPageTile(
+                  title: 'お問い合わせ',
+                  onTap: _showContact,
                 ),
-                const Gap(24),
-                OutlinedButton.icon(
-                  onPressed: _isSigningOut ? null : _showSignOutDialog,
-                  icon: _isSigningOut
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.storefront_outlined),
-                  label: Text(
-                    _isSigningOut ? 'お店を出ています...' : 'お店を出る（ログアウト）',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: const BorderSide(color: Colors.redAccent),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                _MyPageTile(
+                  title: 'プライバシーポリシー',
+                  onTap: _showPrivacyPolicy,
+                ),
+                const _MyPageTile(
+                  title: 'アプリバージョン',
+                  trailingText: '$_appVersion ($_appBuildNumber)',
+                  showChevron: false,
+                ),
+                _MyPageTile(
+                  title: 'アカウント削除',
+                  showChevron: false,
+                  onTap: _showAccountDeletion,
+                ),
+                _MyPageTile(
+                  title: 'お店を出る',
+                  foregroundColor: Colors.redAccent,
+                  isLoading: _isSigningOut,
+                  loadingText: 'お店を出ています...',
+                  showChevron: false,
+                  onTap: _isSigningOut ? null : _showSignOutDialog,
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MyPageTile extends StatelessWidget {
+  const _MyPageTile({
+    required this.title,
+    this.trailingText,
+    this.foregroundColor,
+    this.isLoading = false,
+    this.loadingText,
+    this.showChevron = true,
+    this.onTap,
+  });
+
+  final String title;
+  final String? trailingText;
+  final Color? foregroundColor;
+  final bool isLoading;
+  final String? loadingText;
+  final bool showChevron;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = foregroundColor ?? Colors.black87;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 22),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  isLoading ? loadingText ?? title : title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (isLoading)
+                const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (trailingText != null)
+                Text(
+                  trailingText!,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                )
+              else if (showChevron)
+                Icon(
+                  Icons.chevron_right,
+                  color: Colors.grey.shade500,
+                  size: 30,
+                ),
+            ],
           ),
         ),
       ),
