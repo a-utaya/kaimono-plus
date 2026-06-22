@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.kaimonoPlus</string>
+	<string>com.utayaazusa.kaimonoPlus</string>
 	<key>PROJECT_ID</key>
 	<string>kaimono-plus</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:908859080638:ios:a714f5e9e873a7a8c343ef</string>
+	<string>1:908859080638:ios:817288ff5f8dad27c343ef</string>
 </dict>
 </plist>
