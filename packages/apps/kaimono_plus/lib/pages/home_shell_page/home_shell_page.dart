@@ -1,7 +1,9 @@
 import 'package:auth/auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../components/confirm_dialog.dart';
 import '../../providers/authenticator_provider.dart';
@@ -696,8 +698,141 @@ class MyPage extends ConsumerStatefulWidget {
   ConsumerState<MyPage> createState() => _MyPageState();
 }
 
+class _AccountDataRepository {
+  _AccountDataRepository({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  static const _deleteBatchLimit = 450;
+
+  final FirebaseFirestore _firestore;
+
+  Future<void> deleteUserData(String uid) async {
+    final userRef = _firestore.collection('users').doc(uid);
+    await _deleteCollection(userRef.collection('shoppingLists'));
+    await _deleteCollection(userRef.collection('shoppingItemTags'));
+    await _deleteQuery(
+      _firestore.collection('sharedLists').where('ownerUid', isEqualTo: uid),
+    );
+    await _deleteQuery(
+      _firestore.collection('sharedLists').where('createdBy', isEqualTo: uid),
+    );
+    await userRef.delete();
+  }
+
+  Future<void> _deleteCollection(
+    CollectionReference<Map<String, dynamic>> collection,
+  ) async {
+    await _deleteQuery(collection);
+  }
+
+  Future<void> _deleteQuery(
+    Query<Map<String, dynamic>> query,
+  ) async {
+    while (true) {
+      final snapshot = await query.limit(_deleteBatchLimit).get();
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      if (snapshot.docs.length < _deleteBatchLimit) return;
+    }
+  }
+}
+
 class _MyPageState extends ConsumerState<MyPage> {
+  static const _appVersion = '1.0.0';
+  static const _appBuildNumber = '1';
+  static final _contactFormUri = Uri.parse(
+    'https://docs.google.com/forms/d/e/1FAIpQLSdBkxkPdD2iIl8suuS1WNE5YGwWrCzXjeIkmrC-Td3koIq1Hw/viewform',
+  );
+
+  final _accountDataRepository = _AccountDataRepository();
   bool _isSigningOut = false;
+  bool _isDeletingAccount = false;
+
+  void _openPrivacyPolicyPage() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => const PrivacyPolicyPage(),
+      ),
+    );
+  }
+
+  Future<void> _openContactForm() async {
+    try {
+      final launched = await launchUrl(
+        _contactFormUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (launched || !mounted) return;
+
+      showAppSnackBar(
+        context,
+        'お問い合わせフォームを開けませんでした',
+        isError: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'お問い合わせフォームを開けませんでした。アプリを再起動してからお試しください。',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _showAccountDeletionDialog() async {
+    if (_isDeletingAccount) return;
+
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => _AccountDeletionDialog(
+        email:
+            ref.read(authStateChangesProvider).value?.email ??
+            ref.read(authenticatorProvider).currentUserEmail,
+      ),
+    );
+    if (password == null || password.isEmpty) return;
+
+    await _deleteAccount(password);
+  }
+
+  Future<void> _deleteAccount(String password) async {
+    final user = ref.read(authStateChangesProvider).value;
+    if (user == null) {
+      showAppSnackBar(context, 'ログイン状態を確認できませんでした', isError: true);
+      return;
+    }
+
+    setState(() {
+      _isDeletingAccount = true;
+    });
+    try {
+      final authenticator = ref.read(authenticatorProvider);
+      await authenticator.reauthenticateWithPassword(password: password);
+      await _accountDataRepository.deleteUserData(user.uid);
+      await authenticator.deleteCurrentUser();
+      if (!mounted) return;
+      showAppSnackBar(context, 'アカウントを削除しました');
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      showAppSnackBar(context, e.message, isError: true);
+    } catch (_) {
+      if (!mounted) return;
+      showAppSnackBar(context, 'アカウント削除に失敗しました', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeletingAccount = false;
+        });
+      }
+    }
+  }
 
   Future<void> _showSignOutDialog() async {
     await showDialog<void>(
@@ -739,93 +874,357 @@ class _MyPageState extends ConsumerState<MyPage> {
 
   @override
   Widget build(BuildContext context) {
-    final email = ref
-        .watch(authStateChangesProvider)
-        .when(
-          data: (user) => user?.email,
-          error: (_, _) => null,
-          loading: () => null,
-        );
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
         centerTitle: true,
         title: const Text('マイページ'),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_horiz, color: Colors.white),
+            color: Colors.white,
+            onSelected: (value) async {
+              if (value == 'deleteAccount') {
+                await _showAccountDeletionDialog();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'deleteAccount',
+                child: Text('アカウント削除'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Container(
         width: double.infinity,
         color: Colors.white,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(28, 20, 28, 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.amber.shade100,
-                          child: const Icon(
-                            Icons.person_outline,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const Gap(16),
-                        Expanded(
-                          child: Text(
-                            email ?? 'ログイン中',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                _MyPageTile(
+                  title: 'お問い合わせ',
+                  onTap: _openContactForm,
                 ),
-                const Gap(24),
-                OutlinedButton.icon(
-                  onPressed: _isSigningOut ? null : _showSignOutDialog,
-                  icon: _isSigningOut
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.storefront_outlined),
-                  label: Text(
-                    _isSigningOut ? 'お店を出ています...' : 'お店を出る（ログアウト）',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: const BorderSide(color: Colors.redAccent),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                _MyPageTile(
+                  title: 'プライバシーポリシー',
+                  onTap: _openPrivacyPolicyPage,
+                ),
+                const _MyPageTile(
+                  title: 'アプリバージョン',
+                  trailingText: '$_appVersion ($_appBuildNumber)',
+                  showChevron: false,
+                ),
+                _MyPageTile(
+                  title: 'お店を出る',
+                  leadingIcon: Icons.storefront_outlined,
+                  foregroundColor: Colors.redAccent,
+                  isLoading: _isSigningOut,
+                  loadingText: 'お店を出ています...',
+                  showChevron: false,
+                  onTap: _isSigningOut ? null : _showSignOutDialog,
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountDeletionDialog extends StatefulWidget {
+  const _AccountDeletionDialog({
+    required this.email,
+  });
+
+  final String? email;
+
+  @override
+  State<_AccountDeletionDialog> createState() => _AccountDeletionDialogState();
+}
+
+class _AccountDeletionDialogState extends State<_AccountDeletionDialog> {
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final email = widget.email;
+
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      title: const Center(
+        child: Text(
+          'アカウント削除',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'アカウントと保存済みの買い物リスト、タグを削除します。この操作は元に戻せません。',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.6,
+            ),
+          ),
+          if (email != null && email.isNotEmpty) ...[
+            const Gap(12),
+            Text(
+              email,
+              style: const TextStyle(
+                color: Colors.black54,
+                fontSize: 13,
+              ),
+            ),
+          ],
+          const Gap(20),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'パスワード',
+              suffixIcon: IconButton(
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('キャンセル'),
+        ),
+        TextButton(
+          onPressed: _passwordController.text.trim().isEmpty
+              ? null
+              : () => Navigator.of(context).pop(
+                  _passwordController.text,
+                ),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.redAccent,
+          ),
+          child: const Text('削除する'),
+        ),
+      ],
+    );
+  }
+}
+
+class PrivacyPolicyPage extends StatelessWidget {
+  const PrivacyPolicyPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.amber,
+        centerTitle: true,
+        title: const Text('プライバシーポリシー'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Kaimono+ は、アプリの提供に必要な範囲で以下の情報を取り扱います。',
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.7,
+                ),
+              ),
+              Gap(28),
+              _PrivacyPolicySection(
+                title: '取得する情報',
+                body:
+                    '・ログインに使用するメールアドレス\n'
+                    '・作成した買い物リスト、タグ、ウィジェット表示設定\n'
+                    '・お問い合わせ時にユーザーから提供された情報',
+              ),
+              _PrivacyPolicySection(
+                title: '利用目的',
+                body:
+                    '・買い物リストやタグを保存・同期するため\n'
+                    '・ログイン状態を管理するため\n'
+                    '・お問い合わせへの対応や不具合調査のため',
+              ),
+              _PrivacyPolicySection(
+                title: '外部サービス',
+                body:
+                    '本アプリでは、認証やデータ保存のため Firebase を利用します。'
+                    'また、お問い合わせフォームの提供に Google フォームを利用します。',
+              ),
+              _PrivacyPolicySection(
+                title: '第三者提供',
+                body: '法令に基づく場合を除き、ユーザーの同意なく第三者へ個人情報を提供しません。',
+              ),
+              _PrivacyPolicySection(
+                title: 'お問い合わせ',
+                body: '本ポリシーに関するお問い合わせは、マイページの「お問い合わせ」からご連絡ください。',
+              ),
+              Text(
+                '制定日: 2026年6月6日',
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 13,
+                  height: 1.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrivacyPolicySection extends StatelessWidget {
+  const _PrivacyPolicySection({
+    required this.title,
+    required this.body,
+  });
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Gap(10),
+          Text(
+            body,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.7,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyPageTile extends StatelessWidget {
+  const _MyPageTile({
+    required this.title,
+    this.leadingIcon,
+    this.trailingText,
+    this.foregroundColor,
+    this.isLoading = false,
+    this.loadingText,
+    this.showChevron = true,
+    this.onTap,
+  });
+
+  final String title;
+  final IconData? leadingIcon;
+  final String? trailingText;
+  final Color? foregroundColor;
+  final bool isLoading;
+  final String? loadingText;
+  final bool showChevron;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = foregroundColor ?? Colors.black87;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 22),
+          child: Row(
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(
+                  leadingIcon,
+                  color: color,
+                  size: 24,
+                ),
+                const Gap(12),
+              ],
+              Expanded(
+                child: Text(
+                  isLoading ? loadingText ?? title : title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (isLoading)
+                const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (trailingText != null)
+                Text(
+                  trailingText!,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                )
+              else if (showChevron)
+                Icon(
+                  Icons.chevron_right,
+                  color: Colors.grey.shade500,
+                  size: 30,
+                ),
+            ],
           ),
         ),
       ),

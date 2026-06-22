@@ -177,7 +177,7 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
           : null,
       body: Container(
         height: double.infinity,
-        color: Colors.white,
+        color: const Color(0xFFF7F7F7),
         child: Column(
           children: [
             Padding(
@@ -210,6 +210,7 @@ class _KaimonoListPageState extends ConsumerState<KaimonoListPage> {
                   icon: const Icon(Icons.sell_outlined),
                   label: const Text('タグから追加'),
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
                     foregroundColor: Colors.amber.shade800,
                     side: BorderSide(color: Colors.amber.shade300),
                     shape: RoundedRectangleBorder(

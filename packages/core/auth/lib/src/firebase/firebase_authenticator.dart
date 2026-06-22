@@ -18,6 +18,8 @@ class FirebaseAuthenticator {
   Stream<AuthUser?> get authStateChanges =>
       _auth.authStateChanges().map(_toAuthUser);
 
+  String? get currentUserEmail => _auth.currentUser?.email;
+
   Future<AuthUser> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -58,6 +60,37 @@ class FirebaseAuthenticator {
   }
 
   Future<void> signOut() => _auth.signOut();
+
+  Future<void> reauthenticateWithPassword({required String password}) async {
+    final user = _auth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null || email.isEmpty) {
+      throw const AuthException('ログイン状態を確認できませんでした');
+    }
+
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_reauthenticateErrorMessage(e.code), code: e.code);
+    }
+  }
+
+  Future<void> deleteCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw const AuthException('ログイン状態を確認できませんでした');
+    }
+
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_deleteAccountErrorMessage(e.code), code: e.code);
+    }
+  }
 
   Future<void> sendPasswordResetCode({required String email}) async {
     try {
@@ -154,6 +187,31 @@ class FirebaseAuthenticator {
         return 'メール/パスワード認証が有効になっていません';
       default:
         return '登録に失敗しました。しばらく経ってからお試しください';
+    }
+  }
+
+  String _reauthenticateErrorMessage(String code) {
+    switch (code) {
+      case 'invalid-credential':
+      case 'wrong-password':
+        return 'パスワードが正しくありません';
+      case 'too-many-requests':
+        return '試行回数が多すぎます。しばらく経ってからお試しください';
+      case 'network-request-failed':
+        return '通信に失敗しました。ネットワーク接続を確認してください';
+      default:
+        return '本人確認に失敗しました';
+    }
+  }
+
+  String _deleteAccountErrorMessage(String code) {
+    switch (code) {
+      case 'requires-recent-login':
+        return '安全のため、もう一度ログインしてからお試しください';
+      case 'network-request-failed':
+        return '通信に失敗しました。ネットワーク接続を確認してください';
+      default:
+        return 'アカウント削除に失敗しました';
     }
   }
 }
