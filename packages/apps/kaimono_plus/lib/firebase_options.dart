@@ -62,11 +62,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAUSTsvALAuqXKx6o14Kv-zB9eUeG7oabI',
-    appId: '1:908859080638:ios:a714f5e9e873a7a8c343ef',
+    appId: '1:908859080638:ios:817288ff5f8dad27c343ef',
     messagingSenderId: '908859080638',
     projectId: 'kaimono-plus',
     storageBucket: 'kaimono-plus.firebasestorage.app',
-    iosBundleId: 'com.example.kaimonoPlus',
+    iosBundleId: 'com.utayaazusa.kaimonoPlus',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -77,5 +77,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'kaimono-plus.firebasestorage.app',
     iosBundleId: 'com.example.kaimonoPlus',
   );
-
 }
