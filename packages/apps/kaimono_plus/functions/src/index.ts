@@ -249,6 +249,7 @@ export const createSharedList = onCall({ invoker: 'public' }, async (request) =>
   const docRef = db.collection(SHARED_LISTS_COLLECTION).doc();
   await docRef.set({
     items,
+    ownerUid: request.auth.uid,
     createdBy: request.auth.uid,
     createdAt: FieldValue.serverTimestamp(),
     version: 1,
